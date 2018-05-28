@@ -1,0 +1,66 @@
+<template id="card-personal">
+    <style>
+        #Info{
+            border:2px dashed lightslategrey;
+            padding:10px;
+            display:flex;
+            flex-wrap:wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+        #Info > div{
+            
+            margin-top:5px;
+        }
+        </style>
+    <div id="Info">
+        <div class="firstName">
+            <label for="name">First Name :</label>
+            <input type="text" name="name" id="name">
+        </div>
+        <div class="lastName">
+            <label for="lastName">Last Name :</label>
+            <input type="text" name="lastName" id="lastName">
+        </div>
+        <div class="currentProject">
+            <label for="email">currentProject :</label>
+            <input type="text" name="currentProject" id="currentProject">
+        </div>
+        <div class="surname">
+            <label for="address">surname :</label>
+            <input type="text" name="surname" id="surname">
+        </div>
+        <div class="knows">
+            <label for="country">knows :</label>
+            <input type="text" name="knows" id="knows">
+        </div>
+    </div>
+</template>
+<script>
+    
+    class CardPersonalInfo extends HTMLElement{
+        constructor (){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const templateCandidates = document.querySelectorAll('link[rel=import]');
+            let template = null;
+            for (let templateCandidate of templateCandidates) {
+                template = templateCandidate.import.querySelector('#card-personal');
+                if (template != null) {
+                    break;
+                }
+            }
+            const instance = template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        setPostal(postal){
+            console.log("set in personal");
+            this.postal = postal;
+        }
+    }
+
+    window.customElements.define('card-personal', CardPersonalInfo);
+</script>

@@ -1,0 +1,101 @@
+<template id="sparql-request">
+    <style>
+        #resourceInfo {
+            width: 100%;
+            margin:0 auto;
+            background-color:rgba(90, 90, 90, 0.308);
+        }
+        #resourceInput {
+            margin:0 auto;
+            width:80%;
+            text-align:center;
+            margin-top:20px;
+        }
+        #title {
+            width:100%;
+            text-align:center;
+        }
+        #content {
+            width:50%;
+            margin: 0 auto;
+        }
+    </style>
+    <div id="resourceInput">
+        <label for="name">Nom de la ressource : </label>
+        <input type="text" name="name" id="name"> <br>
+        <label for="request">Requete : </label>
+        <input type="text" name="request" id="request">
+        <button id="submit">Get</button>
+    </div>
+    <div id="resourceInfo">
+        <div id="title"></div>
+        <pre id="content"></pre>
+    </div>
+</template>
+<script>
+    class SparqlRequest extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const templateCandidates = document.querySelectorAll('link[rel=import]');
+            let template = null;
+            for (let templateCandidate of templateCandidates) {
+                template = templateCandidate.import.querySelector('#sparql-request');
+                if (template != null) {
+                    break;
+                }
+            }
+            const instance = template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("submit").addEventListener('click', e => {
+                let name = this.shadowRoot.querySelector('input[name=name]').value;
+                let request = this.shadowRoot.querySelector('input[name=request]').value;
+                if (name != "" && request != ""){
+                    console.log("click sparql");
+                    this.postal.publish({
+                        channel:'solid',
+                        topic:'patch-sparql',
+                        data: {name, request}
+                    });
+                }
+            });
+        }
+
+        setPostal(postal){
+            console.log("set postal in sparql req");
+            this.postal = postal;
+            this.setPostalChannels();
+        }
+
+        setPostalChannels(){
+            let done = this.postal.subscribe({
+                channel:'solid',
+                topic:'done-sparql',
+                callback:(data, enveloppe) => {
+                    let title = this.shadowRoot.querySelector("#title");
+                    let content = this.shadowRoot.querySelector("#content");
+                    content.textContent = data;
+                    title.textContent = "test";
+                }
+            });
+
+            let err = this.postal.subscribe({
+                channel:'solid',
+                topic:'err-sparql',
+                callback:(data, enveloppe) => {
+                    let title = this.shadowRoot.querySelector("#title");
+                    let content = this.shadowRoot.querySelector("#content");
+                    content.textContent = data;
+                    title.textContent = "error";
+                }
+            });
+        }
+    }
+
+window.customElements.define('sparql-request', SparqlRequest);
+</script>
