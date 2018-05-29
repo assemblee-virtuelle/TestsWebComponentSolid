@@ -1,0 +1,55 @@
+<template id="tmpl-register">
+    <form id="registerForm">
+        <label for="username">Username :</label>
+        <input type="text" name="username" id="username"><br>
+        <label for="password">Password :</label>
+        <input type="password" name="password" id="password"><br>
+        <label for="name">Name :</label>
+        <input type="text" name="name" id="name"><br>
+        <label for="email">Email :</label>
+        <input type="text" name="email" id="email"><br>
+        <button type="submit" id="Submit">Submit</button> 
+    </form>
+</template>
+    <script>
+        const registerTmpl = document.currentScript.ownerDocument.getElementById('tmpl-register');
+        class Register extends HTMLElement{
+            constructor(){
+                super();
+                const shadowRoot = this.attachShadow({
+                    mode: 'open'
+                });
+                const instance = registerTmpl.content.cloneNode(true);
+                this.shadowRoot.appendChild(instance);
+                this.register = this.shadowRoot.getElementById('registerForm');
+            }
+
+            connectedCallback(){
+                this.register.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.registerForm();
+                })
+            }
+
+            registerForm(){
+                let formData = this.shadowRoot.querySelectorAll('input');
+                let res = {};
+                for (let i = 0; i < formData.length; i++){
+                    res[formData[i].name] = formData[i].value;
+                }
+                if (this.postal){
+                    this.postal.publish({
+                        channel:'auth',
+                        topic:'register',
+                        data:res
+                    });
+                }
+            }
+
+            setPostal(postal){
+                console.log("set postal in register");
+                this.postal = postal;
+            }
+        }
+        window.customElements.define('register-interface', Register);
+    </script>

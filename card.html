@@ -50,11 +50,9 @@
             this.shadowRoot.getElementById("submit").addEventListener('click', e => {
                 this.inputs = [];
                 this.shadowRoot.querySelector("#status").textContent = "";
-                for (let j = 0; j < this.innercards.length; j++) {
-                    let inputlist = this.innercards[j].shadowRoot.querySelectorAll('input');
-                    for (let i = 0; i < inputlist.length; i++){
-                        this.inputs[inputlist[i].name] = inputlist[i].value;
-                    }
+                let inputlist = this.innercard.shadowRoot.querySelectorAll('input');
+                for (let i = 0; i < inputlist.length; i++){
+                    this.inputs[inputlist[i].name] = inputlist[i].value;
                 }
                 this.submit();
             });
@@ -73,11 +71,9 @@
         setPostal(postal){
             console.log("set postal in cardcreator");
             this.postal = postal;
-            let cards = this.shadowRoot.querySelectorAll('card-personal');
-            this.innercards = cards;
-            for (let i = 0; i < cards.length; i++) {
-                cards[i].setPostal(this.postal);
-            }
+            let cardPersonal = this.shadowRoot.querySelector('card-personal');
+            this.innercard = cardPersonal;
+            cardPersonal.setPostal(this.postal);
             this.setPostalChannels();
         }
 

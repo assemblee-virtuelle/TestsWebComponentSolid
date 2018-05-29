@@ -1,0 +1,23 @@
+<template id="tmpl-login">
+    login interface tkt
+
+</template>
+<script>
+    const loginTmpl = document.currentScript.ownerDocument.getElementById('tmpl-login');
+    class Login extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = loginTmpl.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        setPostal(postal){
+            console.log("set postal in login");
+            this.postal = postal;
+        }
+    }
+    window.customElements.define('login-interface', Login);
+</script>

@@ -6,10 +6,14 @@ const { namedNode, literal, defaultGraph, quad } = DataFactory;
 let card = document.querySelector('card-creator');
 let reader = document.querySelector('resource-reader');
 let sparql = document.querySelector('sparql-request');
+let connect = document.querySelector('connect-interface');
+
 
 card.setPostal(postal);
 reader.setPostal(postal);
 sparql.setPostal(postal);
+connect.setPostal(postal);
+
 
 let uri = "https://localhost:8443/";
 
@@ -87,7 +91,7 @@ let getResource = postal.subscribe({
             })
         }
     }
-})
+});
 
 let sparqlUpdate = postal.subscribe({
     channel:'solid',
@@ -127,18 +131,47 @@ let sparqlUpdate = postal.subscribe({
             });
         })
     }
+});
+
+let register = postal.subscribe({
+    channel:'auth',
+    topic:'register',
+    callback: (data, enveloppe) => {
+
+        fetch('https://localhost:8443/api/accounts/new', {
+            method:'POST',
+            headers:{
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body:`username=${data.username}&password=${data.password}&name=${data.name}&email=${data.email}`
+        })
+        .then(res => {
+            return res.headers.get('Location');
+        })
+        .then(headers => console.log('headers :', headers))
+        .catch(err => console.log('err :', err));
+    }
 })
 
 function proceedDataToJsonLdCard(data){
     let keys = Object.keys(data);
     let resource = "";
     let writer = N3.Writer({ prefixes: { 
-        card: uri + 'card.ttl#',
         foaf: 'http://xmlns.com/foaf/0.1/',
         rdf:'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
     }});
     writer.addQuad(
-        namedNode('card:me'),
+        namedNode('https://savincen.localhost:5000/card'),
+        namedNode('rdf:Type'),
+        namedNode('foaf:PersonalProfileDocument')
+    );
+    writer.addQuad(
+        namedNode('https://savincen.localhost:5000/card'),
+        namedNode('foaf:primaryTopic'),
+        namedNode('#me')
+    );
+    writer.addQuad(
+        namedNode('#me'),
         namedNode('rdf:Type'),
         namedNode('foaf:Person')
     );
@@ -147,28 +180,8 @@ function proceedDataToJsonLdCard(data){
         for (let key in data){
             if (data.hasOwnProperty(key)) {
                 let rdfKey;
-                switch(key){
-                    case "name":
-                        rdfKey = "firstName"
-                        break;
-                    case "lastName" :
-                        rdfKey = "lastName"
-                        break;
-                    case "knows":
-                        rdfKey = "knows"
-                        break;
-                    case "surname":
-                        rdfKey = "surname"
-                        break;
-                    case "currentProject":
-                        rdfKey = "currentProject"
-                        break;
-                    default:
-                        rdfKey = key
-                        break;
-                }
                 writer.addQuad(
-                    namedNode('card:me'),
+                    namedNode('#me'),
                     namedNode('foaf:'+rdfKey),
                     literal(data[key])
                 );
@@ -184,3 +197,4 @@ function proceedDataToJsonLdCard(data){
         return resource;
     }
 }
+
