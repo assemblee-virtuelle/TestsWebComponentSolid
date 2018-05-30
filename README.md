@@ -3,9 +3,13 @@
 Web Component testing of **solid** API
 
 
-## Notes: 
+#Authentication
 
-Signin : 
+**Tutorial here :** https://hackmd.io/onfGBqczTzClCd2DUKViEg#
+
+**Important !** The authentification will change in the future see https://github.com/solid/node-solid-server/issues/672 
+
+###Signin : 
 with **ONE** fetch request
 
 -   Send a POST request to /api/accounts/new. (If it's not working and the server is up, it's maybe because the browser certificate for https:localhost:8443/api/accounts/new is registered as UNSAFE)
@@ -49,3 +53,6 @@ And the third response (which fetch() gets) is this:
     Date: Tue, 29 May 2018 13:34:59 GMT
     Connection: keep-alive
     
+###Login
+
+To login and exchange information with credentials you need to install an Auth Client (or make one)

@@ -69,7 +69,6 @@
         }
 
         setPostal(postal){
-            console.log("set postal in cardcreator");
             this.postal = postal;
             let cardPersonal = this.shadowRoot.querySelector('card-personal');
             this.innercard = cardPersonal;
@@ -82,9 +81,9 @@
                 channel:'solid',
                 topic:'done-card',
                 callback: (data, enveloppe) => {
-                    if (data == "ok"){
+                    if (data){
                         let status = this.shadowRoot.querySelector("#status");
-                        status.textContent = "Created !"
+                        status.textContent = "Created at : " + data;
                     }
                 }
             });

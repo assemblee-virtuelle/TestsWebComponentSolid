@@ -32,15 +32,14 @@ let postCard = postal.subscribe({
             },
             body: resource
         }).then(res => {
-            return res.statusText;
+            return res.headers.get('Location');
         })
-        .then(msg => {
-            console.log('msg :', msg);
-            if (msg == "Created"){
+        .then(path => {
+            if (path){
                 postal.publish({
                     channel:'solid',
                     topic:'done-card',
-                    data:'ok'
+                    data:path
                 });
                 postCard.unsubscribe();
             }
@@ -133,6 +132,8 @@ let sparqlUpdate = postal.subscribe({
     }
 });
 
+var tmpUrl = uri;
+
 let register = postal.subscribe({
     channel:'auth',
     topic:'register',
@@ -146,10 +147,30 @@ let register = postal.subscribe({
             body:`username=${data.username}&password=${data.password}&name=${data.name}&email=${data.email}`
         })
         .then(res => {
-            return res.headers.get('Location');
+            return res.url
         })
-        .then(headers => console.log('headers :', headers))
+        .then(resUrl => {
+            tmpUrl = resUrl;
+            console.log('resUrl :', resUrl);
+        })
         .catch(err => console.log('err :', err));
+    }
+})
+
+let login = postal.subscribe({
+    channel: 'auth',
+    topic: 'login',
+    callback:(data, enveloppe) => {
+        auth.currentSession()
+        .then(session => {
+          console.log('auth.currentSession():', session);
+          if (!session.hasCredentials()) {
+            console.log('Empty session, redirecting to login');
+            auth.login('https://localhost:8443');
+          } else {
+            console.log('hasCredentials() === true');
+          } 
+        });
     }
 })
 
@@ -198,3 +219,38 @@ function proceedDataToJsonLdCard(data){
     }
 }
 
+
+/*--------------AUTHENTICATION--------------*/
+
+var OIDCWebClient = OIDC.OIDCWebClient;
+var options = { solid: true };
+var auth = new OIDCWebClient(options);
+
+var fetch; //override fetch method
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    auth.currentSession()
+    .then(session => {
+        console.log('session: ', session);
+        if (!session.hasCredentials()){
+            fetch = window.fetch;
+            uri = "https://localhost:8443/";
+        } else{
+            let regexp = /(https:\/\/)(.*)(\.localhost.*)/g;
+            let match = regexp.exec(session.idClaims.sub);
+            if(match[2] != null && match[2] != undefined){
+                fetch = session.fetch;
+                uri = `https://${match[2]}.localhost:8443/`;
+            }
+        }
+    })
+});
+
+document.getElementById("logout").addEventListener('click', e => {
+    auth.logout();
+    auth.currentSession()
+    .then(session => {
+        console.log('sessionclosed: ', session);
+    })
+});
