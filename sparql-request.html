@@ -21,11 +21,8 @@
         }
     </style>
     <div id="resourceInput">
-        <label for="name">Nom de la ressource : </label>
-        <input type="text" name="name" id="name"> <br>
-        <label for="request">Requete : </label>
-        <input type="text" name="request" id="request">
-        <button id="submit">Get</button>
+        <card-person></card-person>
+        <button id="submit">Envoi</button>
     </div>
     <div id="resourceInfo">
         <div id="title"></div>
@@ -53,16 +50,19 @@
 
         connectedCallback(){
             this.shadowRoot.getElementById("submit").addEventListener('click', e => {
-                let name = this.shadowRoot.querySelector('input[name=name]').value;
-                let request = this.shadowRoot.querySelector('input[name=request]').value;
-                if (name != "" && request != ""){
-                    console.log("click sparql");
-                    this.postal.publish({
-                        channel:'solid',
-                        topic:'patch-sparql',
-                        data: {name, request}
-                    });
+                let innercard = this.shadowRoot.querySelector('card-person');
+                let inputlist = innercard.shadowRoot.querySelectorAll('input');
+                let data = [];
+                for (let i = 0; i < inputlist.length; i++){
+                    if (inputlist[i].value != "")
+                        data[inputlist[i].name] = inputlist[i].value;
                 }
+                console.log("click sparql");
+                this.postal.publish({
+                    channel:'solid',
+                    topic:'patch-sparql',
+                    data: data
+                });
             });
         }
 

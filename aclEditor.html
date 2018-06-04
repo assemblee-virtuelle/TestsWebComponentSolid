@@ -1,0 +1,68 @@
+<template id="tmpl-acl">
+    <style>
+        div{
+            text-align: center;
+            margin-top:10px;
+            
+        }
+    </style>
+    <div id="aclBlock">
+        <label for="resourceName">Modifier les ACL de : </label>
+        <input type="text" name="resourceName" id="resourceName"><br>
+        <label for="query">Sparql query</label>
+        <input type="text" name="query" id="query"><br>
+        <button id="submit">Submit</button>
+    </div>
+    <div id="res"></div>
+
+</template>
+<script>
+    let aclTemplate = document.currentScript.ownerDocument.getElementById("tmpl-acl");
+    class AclEditor extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = aclTemplate.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("submit").addEventListener('click', e => {this.sendData()})
+        }
+
+        sendData(){
+            if (this.postal){
+                let name = this.shadowRoot.getElementById("resourceName").value;
+                let query = this.shadowRoot.getElementById("query").value;
+                this.postal.publish({
+                    channel:'wac',
+                    topic:'modif-acl',
+                    data: {name, query}
+                });
+                this.watchData();
+            }
+        }
+
+        watchData(){
+            let res = this.shadowRoot.getElementById("res");
+            this.postal.subscribe({
+                channel:'wac',
+                topic:'res-acl',
+                callback: (data, enveloppe) => {
+                    if (data["status"] != "error"){
+                        res.innerHTML = data["content"];
+                    } else
+                        alert("Invalid !!");
+                }
+            });
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+        }
+    }
+
+    window.customElements.define('acl-editor', AclEditor);
+</script>

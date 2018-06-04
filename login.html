@@ -1,11 +1,5 @@
 <template id="tmpl-login">
-    <form id="loginForm">
-        <label for="username">Username :</label>
-        <input type="text" name="username" id="username"><br>
-        <label for="password">Password :</label>
-        <input type="password" name="password" id="password"><br>
-        <button type="submit" id="Submit">Submit</button> 
-    </form>
+    <button type="submit" id="Submit">With Solid</button> 
 </template>
 <script>
     const loginTmpl = document.currentScript.ownerDocument.getElementById('tmpl-login');
@@ -17,27 +11,21 @@
             });
             const instance = loginTmpl.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
-            this.login = this.shadowRoot.getElementById("loginForm");
         }
 
         connectedCallback(){
-            this.login.addEventListener('submit', e => {
+            this.shadowRoot.getElementById("Submit").addEventListener('click', e => {
                 e.preventDefault();
-                this.loginForm();
+                this.login();
             })
         }
 
-        loginForm(){
-            let formData = this.shadowRoot.querySelectorAll('input');
-            let res = {};
-            for (let i = 0; i < formData.length; i++){
-                res[formData[i].name] = formData[i].value;
-            }
+        login(){
             if (this.postal){
                 this.postal.publish({
                     channel:'auth',
                     topic:'login',
-                    data:res
+                    data:'ok'
                 });
             }
         }

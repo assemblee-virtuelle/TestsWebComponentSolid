@@ -20,7 +20,7 @@
         }
     </style>
     <div id="cardForm">
-        <card-personal></card-personal>
+        <card-person></card-person>
         <button id="submit">Envoi</button>
         <div id="status"></div>
     </div>
@@ -70,9 +70,9 @@
 
         setPostal(postal){
             this.postal = postal;
-            let cardPersonal = this.shadowRoot.querySelector('card-personal');
-            this.innercard = cardPersonal;
-            cardPersonal.setPostal(this.postal);
+            let cardPerson = this.shadowRoot.querySelector('card-person');
+            this.innercard = cardPerson;
+            cardPerson.setPostal(this.postal);
             this.setPostalChannels();
         }
 
