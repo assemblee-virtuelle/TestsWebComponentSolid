@@ -1,0 +1,81 @@
+<template id="connect-interface">
+    <style>
+        #questionBlock{
+            margin: 0 auto;
+            display:flex;
+            flex-direction: column;
+            width:80%;
+        }
+        .hide{display:none}
+        .show{display:block}
+        #loginOrNot, #logout{
+            margin-top:5px;
+        }
+        div{
+            text-align:center;
+        }
+    </style>
+    <div id="questionBlock">
+        <div id="mainTitle">
+            <h3>Connect or Register ?</h3>
+        </div>
+        <div>
+            <button id="login">Login</button>
+            <button id="register">Register</button>
+        </div>
+    </div>
+    <div id="loginOrNot">
+        <login-interface class="hide"></login-interface>
+        <register-interface class="hide"></register-interface>
+    </div>
+    <div id="logout">
+        <button id="logout_btn">Logout</button>
+    </div>
+
+</template>
+<script>
+    const connectTmpl = document.currentScript.ownerDocument.querySelector("#connect-interface");
+    class ConnectInterface extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = connectTmpl.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.login = this.shadowRoot.querySelector('login-interface');
+            this.register = this.shadowRoot.querySelector('register-interface');
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById('login').addEventListener('click', e => {this.showLoginOrRegister(1)});
+            this.shadowRoot.getElementById('register').addEventListener('click', e => {this.showLoginOrRegister(0)});
+            this.shadowRoot.getElementById("logout_btn").addEventListener('click', e => {this.logout()});
+        }
+
+        logout(){
+            this.postal.publish({
+                channel:'auth',
+                topic:'logout',
+                data:'ok'
+            });
+        }
+
+        showLoginOrRegister(value){            
+            if (value === 1){
+                this.login.className = "show";
+                this.register.className = "hide";
+            } else if (value === 0){
+                this.login.className = "hide";
+                this.register.className = "show";
+            }
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+            this.login.setPostal(postal);
+            this.register.setPostal(postal);
+        }
+    }
+    window.customElements.define('connect-interface', ConnectInterface);
+</script>

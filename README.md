@@ -36,22 +36,7 @@ The first response and second we got in Network (not catchable by fetch or I don
     Date: Tue, 29 May 2018 13:42:36 GMT
     Connection: keep-alive 
     
-And the third response (which fetch() gets) is this:
 
-    HTTP/1.1 401 Unauthorized
-    X-Powered-By: solid-server
-    Access-Control-Allow-Origin: null
-    Vary: Origin
-    Access-Control-Allow-Credentials: true
-    Access-Control-Expose-Headers: Authorization, User, Location, Link, Vary, Last-Modified, ETag, Accept-Patch, Accept-Post, Updates-Via, Allow, WAC-Allow, Content-Length, WWW-Authenticate
-    Allow: OPTIONS, HEAD, GET, PATCH, POST, PUT, DELETE
-    Link: <.acl>; rel="acl", <.meta>; rel="describedBy", <http://www.w3.org/ns/ldp#Container>; rel="type", <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"
-    WWW-Authenticate: Bearer realm="https://localhost:8443", scope="openid webid"
-    Content-Type: text/html; charset=utf-8
-    Content-Length: 617
-    ETag: W/"269-ynyYZGTih2ZhLadbo9uLYVgqbUQ"
-    Date: Tue, 29 May 2018 13:34:59 GMT
-    Connection: keep-alive
     
 ###Login
 

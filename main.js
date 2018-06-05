@@ -24,9 +24,9 @@ aclEditor.setPostal(postal);
 
 /*
 ** L'uri du serveur solid sans authentification.
-** Avec authentification elle se presente sous la forme https://username.localhost:8443/
+** Avec authentification elle se presente sous la forme https://username.localhost:8444/
 */
-const solidUri = "https://localhost:8443/"
+const solidUri = "https://localhost:8444/"
 let uri = solidUri;
 let webid = "";
 
@@ -195,7 +195,6 @@ let sparqlUpdate = postal.subscribe({
         let request = UpdateByFormSparql(data);
         console.log(request);
         
-        
         if (request != null){
             fetch(uri + 'card.ttl', {
                 method:'PATCH',
@@ -234,7 +233,7 @@ let sparqlUpdate = postal.subscribe({
 
 /*
 ** Initialise l'OIDCWebClient et verifie a chaque chargement du dom si une session existe ou non
-** si une session existe, remplace fetch par session.fetch, et l'uri par https://username.localhost:8443/
+** si une session existe, remplace fetch par session.fetch, et l'uri par https://username.localhost:8444/
 ** sinon, remet l'uri normale et l'api fetch native
 */
 var OIDCWebClient = OIDC.OIDCWebClient;
@@ -264,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let match = regexp.exec(webid);
             if(match[2] != null && match[2] != undefined){
                 fetch = session.fetch;
-                uri = `https://${match[2]}.localhost:8443/`;
+                uri = `https://${match[2]}.localhost:8444/`;
                 channel = setLogoutChannel();
                 logoutBlock.style.display = "block";            
             }

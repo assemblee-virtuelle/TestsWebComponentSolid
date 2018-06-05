@@ -1,0 +1,95 @@
+<template id="card-creator">
+    <style>
+        #cardForm{
+            margin: 0 auto;
+            min-width:200px;
+            width:80%;
+            display:flex;
+            flex-direction: column;
+        }
+        .info{
+            border:2px dashed lightslategrey;
+            padding:10px;
+            display:flex;
+            flex-wrap:wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .info > div{
+            margin-top:5px;
+        }
+    </style>
+    <div id="cardForm">
+        <card-person></card-person>
+        <button id="submit">Envoi</button>
+        <div id="status"></div>
+    </div>
+</template>
+
+<script>
+
+    class CardCreator extends HTMLElement{
+        constructor (){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const templateCandidates = document.querySelectorAll('link[rel=import]');
+            let template = null;
+            for (let templateCandidate of templateCandidates) {
+                template = templateCandidate.import.querySelector('#card-creator');
+                if (template != null) {
+                    break;
+                }
+            }
+            const instance = template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("submit").addEventListener('click', e => {
+                this.inputs = [];
+                this.shadowRoot.querySelector("#status").textContent = "";
+                let inputlist = this.innercard.shadowRoot.querySelectorAll('input');
+                for (let i = 0; i < inputlist.length; i++){
+                    this.inputs[inputlist[i].name] = inputlist[i].value;
+                }
+                this.submit();
+            });
+        }
+
+        submit(){
+            if (this.postal != undefined){
+                this.postal.publish({
+                    channel:'solid',
+                    topic:'post-card',
+                    data: this.inputs
+                })
+            }
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+            let cardPerson = this.shadowRoot.querySelector('card-person');
+            this.innercard = cardPerson;
+            cardPerson.setPostal(this.postal);
+            this.setPostalChannels();
+        }
+
+        setPostalChannels(){
+            let done = this.postal.subscribe({
+                channel:'solid',
+                topic:'done-card',
+                callback: (data, enveloppe) => {
+                    if (data){
+                        let status = this.shadowRoot.querySelector("#status");
+                        status.textContent = "Created !";
+                    }
+                }
+            });
+        }
+    }
+
+    window.customElements.define('card-creator', CardCreator);
+
+</script>

@@ -1,0 +1,39 @@
+<template id="tmpl-login">
+    <button type="submit" id="Submit">With Solid</button> 
+</template>
+<script>
+    const loginTmpl = document.currentScript.ownerDocument.getElementById('tmpl-login');
+    class Login extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = loginTmpl.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("Submit").addEventListener('click', e => {
+                e.preventDefault();
+                this.login();
+            })
+        }
+
+        login(){
+            if (this.postal){
+                this.postal.publish({
+                    channel:'auth',
+                    topic:'login',
+                    data:'ok'
+                });
+            }
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+        }
+
+    }
+    window.customElements.define('login-interface', Login);
+</script>
