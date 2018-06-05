@@ -24,7 +24,7 @@
         <label for="name">Nom de la ressource : </label>
         <input type="text" name="name" id="name"><br>
         <label for="select">Sparql Select (optional) :</label>
-        <input type="text" name="select" id="select">
+        <textarea type="text" name="select" id="select"></textarea>
         <button id="submit">Get</button>
     </div>
     <div id="resourceInfo">
@@ -54,7 +54,7 @@
         connectedCallback(){
             this.shadowRoot.querySelector("#submit").addEventListener('click', e =>{
                 let name = this.shadowRoot.querySelector('input[name=name]').value;
-                let query = this.shadowRoot.querySelector('input[name=select]').value;
+                let query = this.shadowRoot.querySelector('textarea[name=select]').value;
                 this.postal.publish({
                     channel:'solid',
                     topic:'get-resource',

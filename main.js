@@ -26,7 +26,9 @@ aclEditor.setPostal(postal);
 ** L'uri du serveur solid sans authentification.
 ** Avec authentification elle se presente sous la forme https://username.localhost:8443/
 */
-let uri = "https://localhost:8443/";
+const solidUri = "https://localhost:8443/"
+let uri = solidUri;
+let webid = "";
 
 /*
 ** Fonctions pour poster une ressource, lire une ressource (par requete normale ou SPARQL)
@@ -75,12 +77,12 @@ function proceedDataToJsonLdCard(data){
         rdf:'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
     }});
     writer.addQuad(
-        namedNode('https://savincen.localhost:5000/card'),
+        namedNode(webid),
         namedNode('rdf:Type'),
         namedNode('foaf:PersonalProfileDocument')
     );
     writer.addQuad(
-        namedNode('https://savincen.localhost:5000/card'),
+        namedNode(webid),
         namedNode('foaf:primaryTopic'),
         namedNode('#me')
     );
@@ -158,39 +160,31 @@ let getResource = postal.subscribe({
     }
 });
 
-function proceedDataToSparql(data, card){
+function UpdateByFormSparql(data){
     let req = "";
-    let me = $rdf.sym("https://savincen.localhost:8443/profile/card#me");
+    let me = $rdf.sym(webid);
     let store = $rdf.graph();
-    let deleteData = 'DELETE WHERE { \n?s ';
-    //let insertData = 'INSERT DATA { \n?s ';
+    let deleteData = 'DELETE { \n ';
+    let insertData = 'INSERT { \n ';
+    let whereData = 'WHERE { \n ';
     let count = 0;
-    let test = data;
-    let last = Object.keys(test).pop();
-    
     
     for(let key in data){
         if(data.hasOwnProperty(key) && data[key] != ""){
-            deleteData += `${FOAF(key)} ?o `;
-            if (key == last)
-                deleteData += '.\n';
-            else
-                deleteData += ';\n'
-            // insertData += `${FOAF(key)} ${data[key]}`;
-            // if (key == last)
-            //     insertData += '.\n';
-            // else
-            //     insertData += ';\n'
+            deleteData += `?s ${FOAF(key)} ?o${count} .\n`;
+            insertData += `?s ${FOAF(key)} "${data[key]}" .\n`;
+            whereData += `?s ${FOAF(key)} ?o${count} .\n`;
             count++;
         }
-        
     }
     if (count == 0)
         return null;
     deleteData += '}'
-    //insertData += '}';
+    insertData += '}';
+    whereData += '}';
     req += deleteData + '\n';
-    //req += insertData;
+    req += insertData + '\n';
+    req += whereData;
     return req;
 }
 
@@ -198,17 +192,9 @@ let sparqlUpdate = postal.subscribe({
     channel:'solid',
     topic:'patch-sparql',
     callback: (data, enveloppe) => {
-        let card = null;
-        fetch(uri + 'card.ttl', {
-            method:'GET',
-            headers:{'Content-type':'text/turtle'}
-        })
-        .then(res => res.text())
-        .then(text => {
-            card = text;
-        })
-        let request = proceedDataToSparql(data, card);
+        let request = UpdateByFormSparql(data);
         console.log(request);
+        
         
         if (request != null){
             fetch(uri + 'card.ttl', {
@@ -267,14 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('session: ', session);
         if (!session.hasCredentials()){
             fetch = window.fetch;
-            uri = "https://localhost:8443/";
+            uri = solidUri;
             if (channel != undefined){
                 channel.unsubscribe();
             }
             logoutBlock.style.display = "none";
         } else{
             let regexp = /(https:\/\/)(.*)(\.localhost.*)/g;
-            let match = regexp.exec(session.idClaims.sub);
+            webid = session.idClaims.sub;
+            let match = regexp.exec(webid);
             if(match[2] != null && match[2] != undefined){
                 fetch = session.fetch;
                 uri = `https://${match[2]}.localhost:8443/`;
@@ -289,13 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
 ** Fonctions de register et login, utilise l'endpoint solidserver/api/accounts/new pour creer un compte
 ** et OIDCWebClient.login() pour le login
 */
-var tmpUrl = uri;
+let tmpUrl = uri;
+let registerEndpoint = 'api/accounts/new';
 let register = postal.subscribe({
     channel:'auth',
     topic:'register',
     callback: (data, enveloppe) => {
 
-        fetch('https://localhost:8443/api/accounts/new', {
+        fetch(solidUri + registerEndpoint, {
             method:'POST',
             headers:{
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -322,7 +310,7 @@ let login = postal.subscribe({
           console.log('auth.currentSession():', session);
           if (!session.hasCredentials()) {
             console.log('Empty session, redirecting to login');
-            auth.login('https://localhost:8443');
+            auth.login(solidUri);
           } else {
             console.log('Already connected');
           } 
@@ -333,13 +321,13 @@ let login = postal.subscribe({
 function logout(){
     auth.logout();
 
-    window.location = "https://savincen.localhost:8443/logout";
     auth.currentSession()
     .then(session => {
         if (channel != undefined){
             channel.unsubscribe();
         }
         fetch = window.fetch;
+        uri = solidUri; 
         logoutBlock.style.display = "none";
         console.log('sessionclosed: ', session);
     })

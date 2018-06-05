@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="./dist/oidc-web.min.js"></script>
+    <script src="./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
     <title>Document</title>
     <style>
         h2{
@@ -21,13 +22,13 @@
     <link rel="import" href="login.html">
     <link rel="import" href="aclEditor.html">
     
-    <h2>Create a card.ttl at the root container/folder</h2>
+    <h2>Creates a card</h2>
     <card-creator></card-creator>
     <hr>
     <h2>Reads a resource</h2>
     <resource-reader></resource-reader>
     <hr>
-    <h2>Edit card</h2>
+    <h2>Edits card</h2>
     <sparql-request></sparql-request>
     <hr><br/>
     <h2>Interface to connect and exchange information while being authentificated</h2>
@@ -36,7 +37,7 @@
     <h2>Edit acl from input resource by input query</h2>
     <acl-editor></acl-editor>
 
-    
+
     <script src="./dist/bundle.js"></script>
 </body>
 </html>
