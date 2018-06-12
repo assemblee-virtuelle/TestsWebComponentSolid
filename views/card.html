@@ -66,6 +66,7 @@
                     data: this.inputs
                 })
             }
+            this.setResponseChannels();
         }
 
         setPostal(postal){
@@ -73,10 +74,10 @@
             let cardPerson = this.shadowRoot.querySelector('card-person');
             this.innercard = cardPerson;
             cardPerson.setPostal(this.postal);
-            this.setPostalChannels();
+
         }
 
-        setPostalChannels(){
+        setResponseChannels(){
             let done = this.postal.subscribe({
                 channel:'solid',
                 topic:'done-card',

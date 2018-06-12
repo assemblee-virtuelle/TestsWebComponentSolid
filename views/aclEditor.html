@@ -7,10 +7,11 @@
         }
     </style>
     <div id="aclBlock">
-        <label for="resourceName">Modifier les ACL de : </label>
-        <input type="text" name="resourceName" id="resourceName"><br>
-        <label for="query">Sparql query</label>
-        <input type="text" name="query" id="query"><br>
+        <label for="personName">WebId de la personne</label>
+        <input type="text" name="personName" id="personName"> <br>
+        <input type="checkbox" name="right" id="read" value="read"><label for="read">Read</label> 
+        <input type="checkbox" name="right" id="write" value="write"><label for="write">Write</label>
+        <input type="checkbox" name="right" id="control" value="control"><label for="control">Control</label> <br>
         <button id="submit">Submit</button>
     </div>
     <div id="res"></div>
@@ -35,17 +36,21 @@
         sendData(){
             if (this.postal){
                 let name = this.shadowRoot.getElementById("resourceName").value;
-                let query = this.shadowRoot.getElementById("query").value;
+                
                 this.postal.publish({
                     channel:'wac',
                     topic:'modif-acl',
-                    data: {name, query}
+                    data: {name}
                 });
-                this.watchData();
+                this.setResponseChannels();
             }
         }
 
-        watchData(){
+        setPostal(postal){
+            this.postal = postal;
+        }
+
+        setResponseChannels(){
             let res = this.shadowRoot.getElementById("res");
             this.postal.subscribe({
                 channel:'wac',
@@ -59,8 +64,8 @@
             });
         }
 
-        setPostal(postal){
-            this.postal = postal;
+        setResource(resource){
+            this.resource = resource;
         }
     }
 

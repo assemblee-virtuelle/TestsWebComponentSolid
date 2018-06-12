@@ -21,10 +21,11 @@ const solidApp = solid.createServer({
     corsProxy: '/proxy', // Where to mount the CORS proxy 
     errorHandler: function(err, req, res, next){
         console.log(err)
+        next();
     }, // function(err, req, res, next) to have a custom error handler
     errorPages: false // specify a path where the error pages are
 })
 
 solidApp.listen(port, () => {
-    console.log("Launched on port " + port)
+    console.log("Launched solid on https://localhost:" + port)
 })

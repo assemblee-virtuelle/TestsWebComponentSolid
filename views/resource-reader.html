@@ -5,12 +5,6 @@
             margin:0 auto;
             background-color:rgba(90, 90, 90, 0.308);
         }
-        #resourceInput {
-            margin:0 auto;
-            width:80%;
-            text-align:center;
-            margin-top:20px;
-        }
         #title {
             width:100%;
             text-align:center;
@@ -18,15 +12,9 @@
         #content {
             width:50%;
             margin: 0 auto;
+            text-align:left;
         }
     </style>
-    <div id="resourceInput">
-        <label for="name">Nom de la ressource : </label>
-        <input type="text" name="name" id="name"><br>
-        <label for="select">Sparql Select (optional) :</label>
-        <textarea type="text" name="select" id="select"></textarea>
-        <button id="submit">Get</button>
-    </div>
     <div id="resourceInfo">
         <div id="title"></div>
         <pre id="content"></pre>
@@ -51,47 +39,14 @@
             this.shadowRoot.appendChild(instance);
         }
 
-        connectedCallback(){
-            this.shadowRoot.querySelector("#submit").addEventListener('click', e =>{
-                let name = this.shadowRoot.querySelector('input[name=name]').value;
-                let query = this.shadowRoot.querySelector('textarea[name=select]').value;
-                this.postal.publish({
-                    channel:'solid',
-                    topic:'get-resource',
-                    data: {name, query}
-                });
-            });
-        }
-
         setPostal(postal){
             this.postal = postal;
-            this.setPostalChannels();
         }
 
-        setPostalChannels(){
-            let done = this.postal.subscribe({
-                channel:'solid',
-                topic:'done-resource',
-                callback:(data, enveloppe) => {
-                    let title = this.shadowRoot.querySelector("#title");
-                    let content = this.shadowRoot.querySelector("#content");
-
-                    content.textContent = data;
-                    title.textContent = "Success";
-                }
-            });
-
-            let err = this.postal.subscribe({
-                channel:'solid',
-                topic:'err-resource',
-                callback:(data, enveloppe) => {
-                    let title = this.shadowRoot.querySelector("#title");
-                    let content = this.shadowRoot.querySelector("#content");
-                    content.textContent = data;
-                    title.textContent = "Error";
-                }
-            });
+        display(data){
+            this.shadowRoot.getElementById("content").textContent = data;
         }
+
     }
     window.customElements.define('resource-reader', ResourceReader);
 </script>

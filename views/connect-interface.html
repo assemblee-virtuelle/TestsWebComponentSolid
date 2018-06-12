@@ -1,35 +1,54 @@
 <template id="connect-interface">
     <style>
-        #questionBlock{
-            margin: 0 auto;
+        .hide{display:none !important}
+        .show{display:block !important}
+        .interface {
+            display: flex;
+            justify-content: space-evenly;
+            border-bottom: 2px solid #018596;
+            padding-bottom: 10px;
+        }
+        #register {
+            width: fit-content;
+            padding: 3px;
+            background-color: #00f1ff96;
+            color: black;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 2px solid #003ffb;
+            box-shadow: inset 0 0 11px 0px #009eff;
+        }
+        #register:hover{
+            border-color: #2c61ff;
+            box-shadow: none;
+        }
+        #register.showing{
+            border-radius: 2px 10px 0px 0px;
+        }
+        #logReg {
+            width:100%;
             display:flex;
-            flex-direction: column;
-            width:80%;
+            justify-content: space-evenly;
         }
-        .hide{display:none}
-        .show{display:block}
-        #loginOrNot, #logout{
-            margin-top:5px;
-        }
-        div{
+        #hello{
             text-align:center;
         }
     </style>
-    <div id="questionBlock">
-        <div id="mainTitle">
-            <h3>Connect or Register ?</h3>
+    <div class="interface">
+        <div id="logReg">
+            <div id="connect">
+                <login-interface></login-interface>
+            </div>
+            <div id="reg">
+                <div id="register">Register</div>
+                <register-interface class="hide"></register-interface>
+            </div>
         </div>
-        <div>
-            <button id="login">Login</button>
-            <button id="register">Register</button>
+        <div id="hello" class="hide">
+            <h2>Connected !</h2>
+            <p>Your WebId : <span id="webid"></span></p>
+            <button id="logout_btn">Logout</button>
         </div>
-    </div>
-    <div id="loginOrNot">
-        <login-interface class="hide"></login-interface>
-        <register-interface class="hide"></register-interface>
-    </div>
-    <div id="logout">
-        <button id="logout_btn">Logout</button>
     </div>
 
 </template>
@@ -45,11 +64,14 @@
             this.shadowRoot.appendChild(instance);
             this.login = this.shadowRoot.querySelector('login-interface');
             this.register = this.shadowRoot.querySelector('register-interface');
+            this.hello = this.shadowRoot.getElementById("hello");
+            this.logReg = this.shadowRoot.getElementById("logReg");
+            this.register_btn = this.shadowRoot.getElementById("register");
+            this.trigger = false;
         }
 
         connectedCallback(){
-            this.shadowRoot.getElementById('login').addEventListener('click', e => {this.showLoginOrRegister(1)});
-            this.shadowRoot.getElementById('register').addEventListener('click', e => {this.showLoginOrRegister(0)});
+            this.shadowRoot.getElementById('register').addEventListener('click', e => {this.showRegister()});
             this.shadowRoot.getElementById("logout_btn").addEventListener('click', e => {this.logout()});
         }
 
@@ -57,17 +79,19 @@
             this.postal.publish({
                 channel:'auth',
                 topic:'logout',
-                data:'ok'
+                data:null
             });
         }
 
-        showLoginOrRegister(value){            
-            if (value === 1){
-                this.login.className = "show";
+        showRegister(){
+            if (this.trigger == true){
                 this.register.className = "hide";
-            } else if (value === 0){
-                this.login.className = "hide";
+                this.register_btn.className = "";
+                this.trigger = false;
+            } else if (this.trigger == false){
+                this.register_btn.className = "showing";
                 this.register.className = "show";
+                this.trigger = true;
             }
         }
 
@@ -75,6 +99,28 @@
             this.postal = postal;
             this.login.setPostal(postal);
             this.register.setPostal(postal);
+            this.setResponseChannels();
+        }
+
+        setResponseChannels(){
+            
+            this.postal.subscribe({
+                channel:'auth',
+                topic:'status',
+                callback: this.triggerConnect.bind(this)
+            });
+        }
+
+        triggerConnect(data, enveloppe){
+            if(data['connected'] && data['connected'] == true){
+                this.logReg.className = "hide";
+                this.hello.className = "show";
+                this.shadowRoot.getElementById("webid").innerHTML = data['webid'];
+            } else{
+                this.logReg.className = "";
+                this.logReg.style.display = "flex !important";
+                this.hello.className = "hide";
+            }
         }
     }
     window.customElements.define('connect-interface', ConnectInterface);
