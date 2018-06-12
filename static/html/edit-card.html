@@ -1,0 +1,103 @@
+<template id="edit-card">
+    <style>
+        #resourceInfo {
+            width: 100%;
+            margin:0 auto;
+            background-color:rgba(90, 90, 90, 0.308);
+        }
+        #resourceInput {
+            margin:0 auto;
+            width:80%;
+            text-align:center;
+            margin-top:20px;
+        }
+        #title {
+            width:100%;
+            text-align:center;
+        }
+        #content {
+            width:50%;
+            margin: 0 auto;
+        }
+        #output {
+            text-align:center;
+        }
+    </style>
+    <div id="resourceInput">
+        <card-person></card-person>
+        <button id="submit">Envoi</button>
+    </div>
+    <div id="output">
+        <p>Card : </p>
+        <resource-reader></resource-reader>
+    </div>
+</template>
+<script>
+    class EditCard extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const templateCandidates = document.querySelectorAll('link[rel=import]');
+            let template = null;
+            for (let templateCandidate of templateCandidates) {
+                template = templateCandidate.import.querySelector('#edit-card');
+                if (template != null) {
+                    break;
+                }
+            }
+            const instance = template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.reader = this.shadowRoot.querySelector('resource-reader');
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("submit").addEventListener('click', this.editCard.bind(this));
+        }
+
+        editCard(){
+            let innercard = this.shadowRoot.querySelector('card-person');
+            let inputlist = innercard.shadowRoot.querySelectorAll('input');
+            let data = [];
+            for (let i = 0; i < inputlist.length; i++){
+                if (inputlist[i].value != "")
+                    data[inputlist[i].name] = inputlist[i].value;
+            }
+            this.postal.publish({
+                channel:'solid',
+                topic:'edit-card',
+                data: {
+                    request : data,
+                    name:'card.ttl'
+                }
+            });
+            this.setResponseChannels();
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+            
+        }
+
+        setResponseChannels(){
+            let done = this.postal.subscribe({
+                channel:'solid',
+                topic:'done-edit',
+                callback:(data, enveloppe) => {
+                    this.reader.display(data);
+                }
+            });
+
+            let err = this.postal.subscribe({
+                channel:'solid',
+                topic:'err-edit',
+                callback:(data, enveloppe) => {
+                    this.reader.display(data);
+                }
+            });
+        }
+    }
+
+window.customElements.define('edit-card', EditCard);
+</script>

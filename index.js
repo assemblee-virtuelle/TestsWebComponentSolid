@@ -14,7 +14,7 @@ let credentials = {key: privateKey, cert: certificate};
 const server = https.createServer(credentials, app);
 
 app.get('/', (req,res) => {
-    res.sendFile('index.html'); //NOT NECESSARY, REMOVE ?
+    res.sendFile('static/index.html');
 });
 
 // app.get('/postal', (req, res) => {

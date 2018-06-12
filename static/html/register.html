@@ -1,0 +1,95 @@
+<template id="tmpl-register">
+    <style>
+        #formBlock{
+            display: flex;
+            width: fit-content;
+            margin: 0 auto;
+            padding: 10px;
+            text-align: center;
+            justify-content: center;
+            background-color: #7be9ea36;
+            border: 1px solid rgba(129, 146, 0, 0.32);
+            border-radius: 0px 5px 5px 5px;
+            box-shadow: inset 0px -20px 45px -14px #18ff004f;
+        }
+        #formBlock > div {
+            display:flex;
+            flex-direction:column;
+            margin:5px;
+        }
+        #formBlock *:not(div){
+            margin-top:3px;
+            margin-bottom:3px;
+        }
+        #registerForm{
+            text-align:center;
+            width:100%;
+        }
+        #submit{
+            position:relative;
+            top:-12px;
+        }
+    </style>
+    <form id="registerForm">
+        <div id="formBlock">
+            <div class="userpassLabel">
+                <label for="username">Username :</label>
+                <label for="password">Password :</label>
+            </div>
+            <div class="userpassInput">
+                <input type="text" name="username" id="username">
+                <input type="password" name="password" id="password"><br>
+            </div>
+            <div class="nameemailLabel">
+                <label for="name">Name :</label>
+                <label for="email">Email :</label>
+            </div>
+            <div class="nameemailInput">
+                <input type="text" name="name" id="name">
+                <input type="text" name="email" id="email">
+            </div>
+        </div>
+        <button type="submit" id="Submit">Submit</button> 
+    </form>
+</template>
+    <script>
+        const registerTmpl = document.currentScript.ownerDocument.getElementById('tmpl-register');
+        class Register extends HTMLElement{
+            constructor(){
+                super();
+                const shadowRoot = this.attachShadow({
+                    mode: 'open'
+                });
+                const instance = registerTmpl.content.cloneNode(true);
+                this.shadowRoot.appendChild(instance);
+                this.register = this.shadowRoot.getElementById('registerForm');
+            }
+
+            connectedCallback(){
+                this.register.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.registerForm();
+                })
+            }
+
+            registerForm(){
+                let formData = this.shadowRoot.querySelectorAll('input');
+                let res = {};
+                for (let i = 0; i < formData.length; i++){
+                    res[formData[i].name] = formData[i].value;
+                }
+                if (this.postal){
+                    this.postal.publish({
+                        channel:'auth',
+                        topic:'register',
+                        data:res
+                    });
+                }
+            }
+
+            setPostal(postal){
+                this.postal = postal;
+            }
+        }
+        window.customElements.define('register-interface', Register);
+    </script>

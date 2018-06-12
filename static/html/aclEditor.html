@@ -1,0 +1,73 @@
+<template id="tmpl-acl">
+    <style>
+        div{
+            text-align: center;
+            margin-top:10px;
+            
+        }
+    </style>
+    <div id="aclBlock">
+        <label for="personName">WebId de la personne</label>
+        <input type="text" name="personName" id="personName"> <br>
+        <input type="checkbox" name="right" id="read" value="read"><label for="read">Read</label> 
+        <input type="checkbox" name="right" id="write" value="write"><label for="write">Write</label>
+        <input type="checkbox" name="right" id="control" value="control"><label for="control">Control</label> <br>
+        <button id="submit">Submit</button>
+    </div>
+    <div id="res"></div>
+
+</template>
+<script>
+    let aclTemplate = document.currentScript.ownerDocument.getElementById("tmpl-acl");
+    class AclEditor extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = aclTemplate.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("submit").addEventListener('click', e => {this.sendData()})
+        }
+
+        sendData(){
+            if (this.postal){
+                let name = this.shadowRoot.getElementById("resourceName").value;
+                
+                this.postal.publish({
+                    channel:'wac',
+                    topic:'modif-acl',
+                    data: {name}
+                });
+                this.setResponseChannels();
+            }
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+        }
+
+        setResponseChannels(){
+            let res = this.shadowRoot.getElementById("res");
+            this.postal.subscribe({
+                channel:'wac',
+                topic:'res-acl',
+                callback: (data, enveloppe) => {
+                    if (data["status"] != "error"){
+                        res.innerHTML = data["content"];
+                    } else
+                        alert("Invalid !!");
+                }
+            });
+        }
+
+        setResource(resource){
+            this.resource = resource;
+        }
+    }
+
+    window.customElements.define('acl-editor', AclEditor);
+</script>
