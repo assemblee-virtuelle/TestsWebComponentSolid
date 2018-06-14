@@ -81,6 +81,26 @@ class CardHandler{
         })
     }
 
+    createResourceACL(name, data){
+        return new Promise((resolve, reject) => {
+            this.fetch(this.uri + name, {
+                method: 'PUT',
+                headers:{
+                    'Content-type':'text/turtle'
+                },
+                body: data
+            }).then(res => {
+                return res.headers.get('Location');
+            })
+            .then(path => {
+                resolve(path);
+            })
+            .catch(err => {
+                reject(err);
+            })
+        })
+    }
+
     channelCardCreate(){
         let postCard = this.postal.subscribe({
             channel:'solid',
@@ -88,7 +108,7 @@ class CardHandler{
             callback: (data, enveloppe) => {
                 let resource = this.proceedDataToJsonLdCard(data);
                 if (resource != null){
-                    this.createResource('card', data).then(loc => {
+                    this.createResource('card', resource).then(loc => {
                         if (loc && loc != ""){
                             this.postal.publish({
                                 channel:'solid',
@@ -166,7 +186,7 @@ class CardHandler{
                 let dataAcl = data['permissions'];
                 this.parseResource(name, dataResource).then(content => {
                     let request = "";
-                    if (dataResource){
+                    if (dataResource && !isEmpty(dataResource)){
                         request = this.updateByFormSparql(dataResource, content);
                     }
                     let resource = this.resourceExists(name);
@@ -175,7 +195,8 @@ class CardHandler{
 
                         if (dataAcl && !isEmpty(dataAcl)){
                             let aclRequest = this.createAcl(name, dataAcl)
-                            this.createResource(name, aclRequest);/*
+                            console.log('aclRequest :', aclRequest);
+                            this.createResourceACL(name + this.aclSuffix, aclRequest);/*
                             if (resource.acl == name + this.aclSuffix){
                                 this.parseAcl(name, dataAcl).then(aclContent =>{
   
@@ -196,6 +217,7 @@ class CardHandler{
     }
     createAcl(name, aclList){
         let aclName = name + this.aclSuffix;
+        let res = null;
         let resourcePath = `./${name}`; //TODO get relative path
         let writer = N3.Writer({ prefixes: { 
             acl: 'http://www.w3.org/ns/auth/acl#',
@@ -234,7 +256,6 @@ class CardHandler{
             literal("Control")
         );
         let count = 0;
-        console.log('aclList :', aclList);
         for(let webid in aclList){
             if (aclList.hasOwnProperty(webid) && aclList[webid] != ""){
                 
@@ -275,12 +296,12 @@ class CardHandler{
         }
         writer.end((error, result) => {
             if (error == null){
-                console.log('result :', result);
-                return result;
+                res = result;
             }
             else 
                 console.log("writer err, ", error);
         });
+        return res;
     }
 
 
