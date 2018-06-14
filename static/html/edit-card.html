@@ -8,8 +8,9 @@
         #resourceInput {
             margin:0 auto;
             width:80%;
+            margin-top:0;
+            background-color: #695abb;
             text-align:center;
-            margin-top:20px;
         }
         #title {
             width:100%;
@@ -21,15 +22,42 @@
         }
         #output {
             text-align:center;
+            margin:10px;
+            margin-top:20px;
+            border:2px solid black;
+        }
+        #mainBlock {
+            border:2px dashed lightgrey;
+        }
+        #mainTitle{
+            padding: 5px;
+            margin-left: 10%;
+            border-radius: 5px 5px 0px 0px;
+            width: fit-content;
+            background-color: #6859bb;
+            font-size: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .title{
+            margin-top:3px;
+            border-bottom:1px dashed black;
+        }
+        #submit{
+            margin-bottom:10px;
         }
     </style>
-    <div id="resourceInput">
-        <card-person></card-person>
-        <button id="submit">Envoi</button>
-    </div>
-    <div id="output">
-        <p>Card : </p>
-        <resource-reader></resource-reader>
+    <div id="mainBlock">
+        <div id="maintitle">Edit a card</div>
+        <div id="resourceInput">
+            <card-person></card-person>
+            <p>Add rights to :</p>
+            <acl-editor></acl-editor>
+            <button id="submit">Envoi</button>
+        </div>
+        <div id="output">
+            <p class="title">Preview card : </p>
+            <resource-reader></resource-reader>
+        </div>
     </div>
 </template>
 <script>
@@ -50,6 +78,7 @@
             const instance = template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
             this.reader = this.shadowRoot.querySelector('resource-reader');
+            this.aclEditor = this.shadowRoot.querySelector('acl-editor');
         }
 
         connectedCallback(){
@@ -64,12 +93,14 @@
                 if (inputlist[i].value != "")
                     data[inputlist[i].name] = inputlist[i].value;
             }
+            
             this.postal.publish({
                 channel:'solid',
                 topic:'edit-card',
                 data: {
                     request : data,
-                    name:'card.ttl'
+                    name:'card.ttl',
+                    permissions: this.aclEditor.getPermissionData()
                 }
             });
             this.setResponseChannels();

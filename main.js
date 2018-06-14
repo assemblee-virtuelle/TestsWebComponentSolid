@@ -55,15 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     card = document.querySelector('card-creator');
-    select = document.querySelector('select-request');
-    sparql = document.querySelector('edit-card');
+    edit = document.querySelector('edit-card');
     connect = document.querySelector('connect-interface');
-    aclEditor = document.querySelector('acl-editor');
     card.setPostal(postal);
-    sparql.setPostal(postal);
-    select.setPostal(postal);
+    edit.setPostal(postal);
     connect.setPostal(postal);
-    aclEditor.setPostal(postal);
 
     CH.channelCardCreate();
     CH.channelCardEdit();

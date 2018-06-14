@@ -3,16 +3,46 @@
         div{
             text-align: center;
             margin-top:10px;
-            
+        }
+        #addImg, #deleteImg{
+            width:30px;
+            height:30px;
+        }
+        #add, #delete{
+            margin:0 auto;
+            margin-top: 5px;
+            margin-bottom:10px;
+            width:fit-content;
+        }
+        #add:hover, #delete:hover{
+            cursor: pointer;
+        }
+        #addOrDel{
+            margin: 0 auto;
+            text-align:center;
+            width:80px;
+            display:flex;
+        }
+        #delete{
+            display:none;
         }
     </style>
-    <div id="aclBlock">
-        <label for="personName">WebId de la personne</label>
-        <input type="text" name="personName" id="personName"> <br>
-        <input type="checkbox" name="right" id="read" value="read"><label for="read">Read</label> 
-        <input type="checkbox" name="right" id="write" value="write"><label for="write">Write</label>
-        <input type="checkbox" name="right" id="control" value="control"><label for="control">Control</label> <br>
-        <button id="submit">Submit</button>
+    <div id="aclList">
+        <div class="permissionsfor perm-0" id="permTemplate">
+            <label for="personName">WebId :</label>
+            <input type="text" name="personName" id="personName">
+            <input type="checkbox" name="right" id="read" value="read"><label for="read">Read</label> 
+            <input type="checkbox" name="right" id="write" value="write"><label for="write">Write</label>
+            <input type="checkbox" name="right" id="control" value="control"><label for="control">ACL Control</label> <br>
+        </div>
+    </div>
+    <div id="addOrDel">
+        <div id="add">
+            <img src="images/plus.png" alt="add" title="Add new" id="addImg">
+        </div>
+        <div id="delete">
+            <img src="images/delete.png" alt="add" title="Add new" id="deleteImg">
+        </div>
     </div>
     <div id="res"></div>
 
@@ -27,41 +57,80 @@
             });
             const instance = aclTemplate.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
+            this.count = 1;
+            this.delete = this.shadowRoot.getElementById("delete");
         }
 
         connectedCallback(){
-            this.shadowRoot.getElementById("submit").addEventListener('click', e => {this.sendData()})
+            this.shadowRoot.getElementById("add").addEventListener('click', e => {this.addNewField()});
+            this.delete.addEventListener('click', e => {this.deleteField()});
+            
         }
 
-        sendData(){
-            if (this.postal){
-                let name = this.shadowRoot.getElementById("resourceName").value;
-                
-                this.postal.publish({
-                    channel:'wac',
-                    topic:'modif-acl',
-                    data: {name}
-                });
-                this.setResponseChannels();
+        deleteField(){
+            if (this.count > 1){
+                this.count--;
+                let last = this.shadowRoot.querySelector(".perm-" + this.count);
+                if (last){
+                    last.remove();
+                }
+            }
+            if (this.count == 1){
+                this.delete.style.display = "none";
             }
         }
 
-        setPostal(postal){
-            this.postal = postal;
+        addNewField(){
+            if (this.count >= 1){
+                this.delete.style.display = "block";
+            }
+            let permBlock = this.shadowRoot.getElementById("permTemplate");
+            let second = permBlock.cloneNode(true);
+            second.id = "";
+            second.className = "permissionsfor perm-"+this.count;
+            
+            let labels = second.querySelectorAll('label');
+            let len = labels.length;
+            for(let i = 0; i < len; i++){
+                labels[i].setAttribute("for", labels[i].getAttribute("for") + this.count);
+            }
+
+            let ids = second.querySelectorAll('input');
+            let idlen = ids.length;
+            for(let i = 0; i < idlen; i++){
+                
+                if (ids[i].getAttribute('type') == "text")
+                    ids[i].value = "";
+                if (ids[i].checked && ids[i].checked == true){
+                    ids[i].checked = false;
+                }
+                ids[i].id += this.count;
+            }
+
+            this.count++;
+            let acl = this.shadowRoot.getElementById("aclList");
+            acl.appendChild(second);
         }
 
-        setResponseChannels(){
-            let res = this.shadowRoot.getElementById("res");
-            this.postal.subscribe({
-                channel:'wac',
-                topic:'res-acl',
-                callback: (data, enveloppe) => {
-                    if (data["status"] != "error"){
-                        res.innerHTML = data["content"];
-                    } else
-                        alert("Invalid !!");
+        getPermissionData(){
+            let ret = {};
+
+            let permList = this.shadowRoot.querySelectorAll(".permissionsFor");
+            let len = permList.length
+            for (let i = 0; i < len; i++){
+                let webid = permList[i].querySelector('input[name=personName]');
+
+                if (webid.value != null && webid.value != undefined && webid.value != ""){
+                    let tab = [];
+                    let perms = permList[i].querySelectorAll('[name="right"]:checked');
+                    let permLen = perms.length;
+                    for (let j = 0; j < permLen; j++){
+                        tab[j] = perms[j].value;
+                    }
+                    ret[webid.value] = tab;
                 }
-            });
+            }
+            return ret;
         }
 
         setResource(resource){

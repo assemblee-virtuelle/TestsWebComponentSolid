@@ -3,9 +3,36 @@ const N3 = require('n3');
 const { DataFactory } = N3;
 const { namedNode, literal } = DataFactory;
 const $rdf = require('rdflib');
+const path = require('path');
 
 var FOAF = $rdf.Namespace("http://xmlns.com/foaf/0.1/")
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+function isEmpty(obj) {
+
+    // null and undefined are "empty"
+    if (obj == null) return true;
+
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length > 0)    return false;
+    if (obj.length === 0)  return true;
+
+    // If it isn't an object at this point
+    // it is empty, but it can't be anything *but* empty
+    // Is it empty?  Depends on your application.
+    if (typeof obj !== "object") return true;
+
+    // Otherwise, does it have any properties of its own?
+    // Note that this doesn't handle
+    // toString and valueOf enumeration bugs in IE < 9
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+}
 class CardHandler{
     constructor(argv = {}){
         extend(this, argv);
@@ -25,7 +52,33 @@ class CardHandler{
         this.uri = uri;
         this.fetch = fetch;
         this.webid = webid;
-        this.me = $rdf.sym(this.webid);
+        if (webid != null){
+            this.me = $rdf.sym(this.webid);
+        } else {
+            this.me = $rdf.sym(uri);
+        }
+    }
+
+    createResource(name, data){
+        return new Promise((resolve, reject) => {
+            this.fetch(this.uri, {
+                method: 'POST',
+                headers:{
+                    'Content-type':'text/turtle',
+                    'Link':'<http://www.w3.org/ns/ldp#Resource>; rel="type"',
+                    'Slug': name
+                },
+                body: data
+            }).then(res => {
+                return res.headers.get('Location');
+            })
+            .then(path => {
+                resolve(path);
+            })
+            .catch(err => {
+                reject(err);
+            })
+        })
     }
 
     channelCardCreate(){
@@ -35,30 +88,17 @@ class CardHandler{
             callback: (data, enveloppe) => {
                 let resource = this.proceedDataToJsonLdCard(data);
                 if (resource != null){
-                    this.fetch(this.uri, {
-                        method: 'POST',
-                        headers:{
-                            'Content-type':'text/turtle',
-                            'Link':'<http://www.w3.org/ns/ldp#Resource>; rel="type"',
-                            'Slug': 'card'
-                        },
-                        body: resource
-                    }).then(res => {
-                        return res.headers.get('Location');
-                    })
-                    .then(path => {
-                        if (path){
+                    this.createResource('card', data).then(loc => {
+                        if (loc && loc != ""){
                             this.postal.publish({
                                 channel:'solid',
                                 topic:'done-card',
-                                data:path
+                                data:loc
                             });
                             postCard.unsubscribe();
                         }
                     })
-                    .catch(err => {
-                        console.log('err :', err);
-                    })
+                    .catch(err => console.log('err ', err));
                 }
             }
         });
@@ -112,7 +152,6 @@ class CardHandler{
                 });
                 return resource;
             }
-            console.log('resource :', resource);
         }
         return null;
     }
@@ -124,9 +163,8 @@ class CardHandler{
             callback: (data, enveloppe) => {
                 let name = data['name'];
                 let dataResource = data['request'];
-                let dataAcl = data['permissions']
+                let dataAcl = data['permissions'];
                 this.parseResource(name, dataResource).then(content => {
-                    console.log('content :', content);
                     let request = "";
                     if (dataResource){
                         request = this.updateByFormSparql(dataResource, content);
@@ -134,23 +172,117 @@ class CardHandler{
                     let resource = this.resourceExists(name);
                     if (resource){
                         this.fetchSparql(request, name);
-                        
-                        //dataAcl est un obj comprenant en key le webid et en value un array de droits
-                        //sous forme webid:['read', 'write', 'control']
-                        if (dataAcl){
-                            this.parseAcl(name, dataAcl).then(content =>{
-                                let request = "";
-                                request = this.changePermissionsSparql(dataAcl, content);
-                                console.log('contentOfAclParse :', content);
-                            });
+
+                        if (dataAcl && !isEmpty(dataAcl)){
+                            let aclRequest = this.createAcl(name, dataAcl)
+                            this.createResource(name, aclRequest);/*
+                            if (resource.acl == name + this.aclSuffix){
+                                this.parseAcl(name, dataAcl).then(aclContent =>{
+  
+                                })
+                                .catch(err => console.log('err :', err));
+                            } else {
+                                let aclRequest = this.createAcl(name, dataAcl)
+                                this.createResource(name, aclRequest);
+                            }*/
                         }
                     } else {
                         console.log("not exist");
                     }
-                })
+                });
             }
         });
+        return editCard;
     }
+    createAcl(name, aclList){
+        let aclName = name + this.aclSuffix;
+        let resourcePath = `./${name}`; //TODO get relative path
+        let writer = N3.Writer({ prefixes: { 
+            acl: 'http://www.w3.org/ns/auth/acl#',
+            foaf: 'http://xmlns.com/foaf/0.1/',
+            rdf:'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+        }});
+
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('rdf:Type'),
+            namedNode('acl:Authorization')
+        );
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('acl:Agent'),
+            namedNode(this.webid)
+        );
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('acl:accessTo'),
+            namedNode(resourcePath)
+        );
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('acl:mode'),
+            literal("Read")
+        );
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('acl:mode'),
+            literal("Write")
+        );
+        writer.addQuad(
+            namedNode('#owner'),
+            namedNode('acl:mode'),
+            literal("Control")
+        );
+        let count = 0;
+        console.log('aclList :', aclList);
+        for(let webid in aclList){
+            if (aclList.hasOwnProperty(webid) && aclList[webid] != ""){
+                
+                
+                writer.addQuad(
+                    namedNode('#group' + count),
+                    namedNode('rdf:Type'),
+                    namedNode('acl:Authorization')
+                );
+                writer.addQuad(
+                    namedNode('#group' + count),
+                    namedNode('acl:Agent'),
+                    namedNode(webid)
+                );
+                writer.addQuad(
+                    namedNode('#group' + count),
+                    namedNode('acl:accessTo'),
+                    namedNode(resourcePath)
+                );
+                let right = aclList[webid];
+                for (let i = 0; i < right.length; i++){
+                    let mode = "";
+                    if (right[i] == "read"){
+                        mode = "Read";
+                    } else if (right[i] == "write"){
+                        mode = "Write";
+                    } else if (right[i] == "control"){
+                        mode = "Control";
+                    }
+                    writer.addQuad(
+                        namedNode('#group' + count),
+                        namedNode('acl:mode'),
+                        literal(mode)
+                    );
+                }
+                count++;
+            }
+        }
+        writer.end((error, result) => {
+            if (error == null){
+                console.log('result :', result);
+                return result;
+            }
+            else 
+                console.log("writer err, ", error);
+        });
+    }
+
 
     /**
      * @description Do a SPARQL request by PATCH on a targeted resource
@@ -229,17 +361,17 @@ class CardHandler{
     }
 
     parseAcl(name, data){
-        data = {
-            'webid1':['read', 'write', 'control']
-        }
         return new Promise((resolve, reject) => {
             let store = $rdf.graph();
+
             this.getResource(name).then(resource => {
                 try {
-                    $rdf.parse(resource, store, this.uri + name + this.aclSuffix);
-                    let ret = [];
+                    $rdf.parse(resource, store, this.uri + name + this.aclSuffix, 'text/turtle');
+                    let ret = {};
                     for (let webid in data){
                         if (data.hasOwnProperty(webid) && data[webid] != ""){
+                            console.log('name :', this.uri + name + this.aclSuffix);
+                            console.log('webid :', webid);
                             let group = store.each(undefined, FOAF('agent'), webid);
                             let len = group.length;
                             for(let i = 0; i < len; i++){
@@ -253,6 +385,7 @@ class CardHandler{
                     reject(error);
                 }
             })
+
         })
     }
 
@@ -342,11 +475,9 @@ class CardHandler{
             if(link && link != undefined){
                 let reg = /(.*<)(.*\.acl)(.*)/g;
                 //(.*?)\.acl
-                console.log('acl : ', link);
                 let match = reg.exec(link);
                 if (match[2] != null && match[2] != undefined){
                     infos['acl'] = match[2];
-                    console.log(match[2]);
                 }
             }
         })
