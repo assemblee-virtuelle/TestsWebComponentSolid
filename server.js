@@ -1,7 +1,7 @@
 const solid = require('../node-solid-server');
 const express = require('express');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-const port = 8444;
+const port = 8443;
 
 const solidApp = solid.createServer({
     cache: 0, // Set cache time (in seconds), 0 for no cache

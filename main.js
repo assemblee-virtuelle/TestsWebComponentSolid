@@ -18,7 +18,7 @@ var OIDCWebClient = OIDC.OIDCWebClient;
 var options = { solid: true };
 var auth = new OIDCWebClient(options);
 
-const solidUri = "https://localhost:8444/"
+const solidUri = "https://localhost:8443/"
 let uri = solidUri;
 let webid = "";
 
