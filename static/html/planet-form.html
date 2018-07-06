@@ -1,0 +1,103 @@
+<template id="planet-form">
+        <style>
+            #inputInfo{
+                display:flex;
+                flex-direction: column;
+                width: fit-content;
+            }
+            .inputs{
+                display:flex;
+                flex-direction:row;
+                margin-bottom:5px;
+                justify-content: flex-end;
+            }
+            label{
+                margin-right:5px;
+            }
+        </style>
+    
+        <div id="form-block">
+            <form action="" id="planetForm">
+                <div id="inputInfo">
+                    <div id="inputName" class="inputs">
+                        <label for="name">Nom de la planète : </label>
+                        <input type="text" id="name" name="name">
+                    </div>
+                    <div id="inputRay" class="inputs">
+                        <label for="radius">Rayon (km) : </label>
+                        <input type="text" id="radius" name="radius">
+                    </div>
+                    <div id="inputTemp" class="inputs">
+                        <label for="temp" >Température en surface (°C) : </label>
+                        <input type="text" id="temp" name="temperature">
+                    </div>
+                </div>
+                <div id="buttons">
+                    <button id="btn_submit">SAVE</button>
+                    <button id="cancel">CANCEL</button>
+                </div>
+            </form>
+        </div>
+    </template>
+    <script>
+        let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');;
+        class PlanetForm extends HTMLElement {
+            constructor(){
+                super();
+                const shadowRoot = this.attachShadow({
+                    mode: 'open'
+                });
+                const instance = planet_form_template.content.cloneNode(true);
+                this.shadowRoot.appendChild(instance);
+                this.planetForm = this.shadowRoot.getElementById("planetForm");
+                this.cancelBtn = this.shadowRoot.getElementById("cancel");
+                this.submitBtn = this.shadowRoot.getElementById("btn_submit");
+            }
+    
+            connectedCallback(){
+                this.submitBtn.addEventListener("click", e => {
+                    e.preventDefault();
+                    this.submit();
+                });
+                this.cancelBtn.addEventListener("click", e => {
+                    e.preventDefault();
+                    this.cancel();
+                });
+            }
+
+            submit(){
+                console.log("submit form");
+                let dataForm = this.planetForm.querySelectorAll('input');
+                let ret = {};
+                
+                for(let i = 0; i < dataForm.length; i++){
+                    if (dataForm[i].value && dataForm[i].value != ""){
+                        ret[dataForm[i].name] = dataForm[i].value;
+                    }
+                }
+                console.log('dataForm :', ret);
+                if (this.postal){
+                    this.postal.publish({
+                        channel:'LoaderManager',
+                        topic:'load-list',
+                        data: ret
+                    });
+                }
+            }
+
+            cancel(){
+                console.log("return to list");
+                if (this.postal){
+                    this.postal.publish({
+                        channel:'LoaderManager',
+                        topic:'load-list'
+                    });
+                }
+            }
+
+            setPostal(){
+                this.postal = postal;
+            }
+        }
+        window.customElements.define("planet-form", PlanetForm);
+    </script>

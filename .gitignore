@@ -3,3 +3,6 @@ config
 .db
 *localhost
 LDP
+static/runtime.*
+static/vendors.*
+static/compiledJs

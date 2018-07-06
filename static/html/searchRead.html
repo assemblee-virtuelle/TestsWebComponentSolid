@@ -1,0 +1,57 @@
+<template id="search-read">
+    <style>
+
+    </style>
+    <div id="search">
+        <label for="inputsrch">Search :</label>
+        <input type="text" id="inputsrch">
+        <button id="go">Go</button>
+    </div>
+    <resource-reader></resource-reader>
+</template>
+<script>
+    const searchTmpl = document.currentScript.ownerDocument.getElementById('search-read');
+    class SearchRead extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = searchTmpl.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.reader = this.shadowRoot.querySelector('resource-reader');
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("go").addEventListener('click', e => {
+                e.preventDefault();
+                this.search();
+            })
+        }
+
+        search(){
+            let req = this.shadowRoot.getElementById("inputsrch").value;
+            this.postal.publish({
+                channel:'solid',
+                topic:'search',
+                data:req
+            });
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+            this.setResponseChannels();
+        }
+
+        setResponseChannels(){
+            let done = this.postal.subscribe({
+                channel:'solid',
+                topic:'done-search',
+                callback:(data, enveloppe) => {
+                    this.reader.display(data);
+                }
+            });
+        }
+    }
+    window.customElements.define('search-read', SearchRead);
+</script>

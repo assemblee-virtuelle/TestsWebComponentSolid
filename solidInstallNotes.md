@@ -1,5 +1,8 @@
-Install Notes
+Pour webpack, mettre   externals: {
+    'node-fetch': 'fetch',
+    'text-encoding': 'TextEncoder',
+    'whatwg-url': 'window',
+    '@trust/webcrypto': 'crypto'
+  },
 
-NOT FINISHED 
-
-[Notes here](https://hackmd.io/s/rkDk5bebQ)
+  sinon ca marche pas le fetch

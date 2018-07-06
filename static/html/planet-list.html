@@ -1,0 +1,82 @@
+<template id="planet-list">
+    <style>
+        #tab{
+            width:90%;
+            border:2px solid rgb(80, 80, 80);
+            margin: 0 auto;
+        }
+        #list-block{
+            text-align:center;
+        }
+        .title{
+            margin-top:50px;
+            margin-bottom:50px;
+        }
+    </style>
+
+    <div id="list-block">
+        <h1 class="title">Liste des planètes</h1>
+        <table id="tab">
+        </table>
+        <button id="add">add</button>
+    </div>
+</template>
+<script>
+    let planet_list_template = document.currentScript.ownerDocument.getElementById('planet-list');;
+    class PlanetList extends HTMLElement {
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = planet_list_template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.table = this.shadowRoot.getElementById("tab");
+        }
+
+        connectedCallback(){
+            this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
+        }
+
+        onAddClick(){
+            if (this.postal){
+                this.postal.publish({
+                    channel:'LoaderManager',
+                    topic:'load-form'
+                });
+            }
+        }
+
+        onEditClick(){
+            if (this.postal){
+                this.postal.publish({
+                    channel:'LoaderManager',
+                    topic:'load-form',
+                    data: {name:"dude"}
+                });
+            }
+        }
+
+        setPostal(){
+            this.postal = postal;
+        }
+    }
+    window.customElements.define("planet-list", PlanetList);
+
+    /*switch (planetInfo[j].predicate.value) {
+        case 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Type': //TODO mettre ca dans la forme d'un array de types
+            key = "Type";
+            break;
+        case 'http://xmlns.com/foaf/0.1/name':
+            key = "Name";
+            break;
+        case 'http://example.org/planet#radius':
+            key = "Radius";
+            break;
+        case 'http://example.org/planet#temperature':
+            key = "Temperature";
+            break;
+        default:
+        break;
+    } */
+</script>

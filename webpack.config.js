@@ -1,10 +1,11 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   entry: {
-    'js/main':'./main.js',
-    'js/cardHandler':'./cardHandler.js'
+    'compiledJs/main':'./main.js',
+    'compiledJs/cardHandler':'./cardHandler.js'
   },
   output: {
     filename: '[name].[chunkhash].js',
@@ -26,8 +27,30 @@ module.exports = {
   resolve: {
     extensions: ['.json', '.js', '.jsx', '.css']
   },
-  plugins: [new HtmlWebpackPlugin({
-    template: 'static/html/index.html'
-  })],
+  plugins: [
+    new CleanWebpackPlugin(['static/compiledJs']),
+    new HtmlWebpackPlugin({
+      title: 'Caching',
+      template: 'static/html/index.html'
+    }),
+  ],
+  optimization: {
+    runtimeChunk: 'single',
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all'
+        }
+      }
+    }
+  },
+  externals: {
+    'node-fetch': 'fetch',
+    'text-encoding': 'TextEncoder',
+    'whatwg-url': 'window',
+    '@trust/webcrypto': 'crypto'
+  },
   mode:'development'
 };

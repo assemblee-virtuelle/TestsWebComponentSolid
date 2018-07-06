@@ -4,35 +4,12 @@ const { DataFactory } = N3;
 const { namedNode, literal } = DataFactory;
 const $rdf = require('rdflib');
 const path = require('path');
+const isEmpty = require('./utils');
 
 var FOAF = $rdf.Namespace("http://xmlns.com/foaf/0.1/")
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-function isEmpty(obj) {
-
-    // null and undefined are "empty"
-    if (obj == null) return true;
-
-    // Assume if it has a length property with a non-zero value
-    // that that property is correct.
-    if (obj.length > 0)    return false;
-    if (obj.length === 0)  return true;
-
-    // If it isn't an object at this point
-    // it is empty, but it can't be anything *but* empty
-    // Is it empty?  Depends on your application.
-    if (typeof obj !== "object") return true;
-
-    // Otherwise, does it have any properties of its own?
-    // Note that this doesn't handle
-    // toString and valueOf enumeration bugs in IE < 9
-    for (var key in obj) {
-        if (hasOwnProperty.call(obj, key)) return false;
-    }
-
-    return true;
-}
 class CardHandler{
     constructor(argv = {}){
         extend(this, argv);
@@ -123,6 +100,7 @@ class CardHandler{
             }
         });
     }
+
     proceedDataToJsonLdCard(data){
         let keys = Object.keys(data);
         let resource = null;
@@ -215,6 +193,7 @@ class CardHandler{
         });
         return editCard;
     }
+    
     createAcl(name, aclList){
         let aclName = name + this.aclSuffix;
         let res = null;
@@ -232,7 +211,7 @@ class CardHandler{
         );
         writer.addQuad(
             namedNode('#owner'),
-            namedNode('acl:Agent'),
+            namedNode('acl:agent'),
             namedNode(this.webid)
         );
         writer.addQuad(
@@ -243,23 +222,21 @@ class CardHandler{
         writer.addQuad(
             namedNode('#owner'),
             namedNode('acl:mode'),
-            literal("Read")
+            namedNode('acl:Read')
         );
         writer.addQuad(
             namedNode('#owner'),
             namedNode('acl:mode'),
-            literal("Write")
+            namedNode('acl:Write')
         );
         writer.addQuad(
             namedNode('#owner'),
             namedNode('acl:mode'),
-            literal("Control")
+            namedNode('acl:Control')
         );
         let count = 0;
         for(let webid in aclList){
             if (aclList.hasOwnProperty(webid) && aclList[webid] != ""){
-                
-                
                 writer.addQuad(
                     namedNode('#group' + count),
                     namedNode('rdf:Type'),
@@ -267,7 +244,7 @@ class CardHandler{
                 );
                 writer.addQuad(
                     namedNode('#group' + count),
-                    namedNode('acl:Agent'),
+                    namedNode('acl:agent'),
                     namedNode(webid)
                 );
                 writer.addQuad(
@@ -288,7 +265,7 @@ class CardHandler{
                     writer.addQuad(
                         namedNode('#group' + count),
                         namedNode('acl:mode'),
-                        literal(mode)
+                        namedNode('acl:' + mode)
                     );
                 }
                 count++;

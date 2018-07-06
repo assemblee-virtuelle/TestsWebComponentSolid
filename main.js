@@ -1,153 +1,99 @@
 const postal = require('postal');
-const CardHandler = require('./cardHandler');
+const PlanetHandler = require('./planetHandler');
+const AccountManager = require('./accountManager');
 
 
 /*
 ** Initialise postal dans les classes des webcomponent
 */
 
-var card;
-var select;
-var sparql;
 var connect;
-var aclEditor;
 
 var fetch = window.fetch;
+window.postal = postal;
 
-var OIDCWebClient = OIDC.OIDCWebClient;
-var options = { solid: true };
-var auth = new OIDCWebClient(options);
-
-const solidUri = "https://localhost:8443/"
-let uri = solidUri;
+const solidUri = "https://localhost:8443/";
 let webid = "";
+let registerEndpoint = "api/accounts/new";
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    let accOptions = {
+        uri: solidUri,
+        registerEndpoint: registerEndpoint
+    };
+    var accountManager = new AccountManager(accOptions);
+
     let options = {
-        fetch:fetch,
+        account: accountManager,
         postal:postal,
-        uri:uri
+        planetDir: 'planets',
+        planetListName: 'PlanetList.ttl'
     }
+    var PH = new PlanetHandler(options);
 
-    var CH = new CardHandler(options);
-
-    auth.currentSession()
-    .then(session => {
-        console.log('session: ', session);
-        if (!session.hasCredentials()){
-            fetch = window.fetch;
-            uri = solidUri;
-            CH.setCredentialsInfos(uri, fetch, null);
-            publishLoggedStatus(false, null);
-        } else{
-            let regexp = /(.*)(profile.*)/g;
-            webid = session.idClaims.sub;
-            let match = regexp.exec(webid);
-            console.log('webid :', webid);
-            if(match[1] != null && match[1] != undefined){
-                fetch = session.fetch;
-                uri = match[1];
-                CH.setCredentialsInfos(uri, fetch, webid);
-                let hello = setHelloChannel(webid);
+    accountManager.checkConnect()
+    .then(val => {
+        if(val){
+            webid = accountManager.authWebid;
+            if (webid && webid != ""){
+                PH.reloadListPath();
+                publishLoggedStatus(true);
             }
+        } else {
+            webid = null;
+            PH.reloadListPath();
+            publishLoggedStatus(false);
         }
     });
 
-    card = document.querySelector('card-creator');
-    edit = document.querySelector('edit-card');
+
+    
     connect = document.querySelector('connect-interface');
-    card.setPostal(postal);
-    edit.setPostal(postal);
+    planet = document.querySelector('planet-list');
+
+    //#region Postal Channels Configuration
     connect.setPostal(postal);
+    planet.setPostal(postal);
 
-    CH.channelCardCreate();
-    CH.channelCardEdit();
-
-
-});
-
-function setHelloChannel(webid){
-    let ret;
-
-    ret = postal.subscribe({
+    let register = postal.subscribe({
         channel:'auth',
-        topic:'logout',
-        callback:logout
-    })
-    publishLoggedStatus(true, webid);
-    return ret;
-}
-
-function publishLoggedStatus(islogged, webid){
-   postal.publish({
-       channel:'auth',
-       topic:'status',
-       data:{
-            connected: islogged, 
-            webid:webid
+        topic:'register',
+        callback: accountManager.register.bind(accountManager)
+    });
+    let login = postal.subscribe({
+        channel: 'auth',
+        topic: 'login',
+        callback: accountManager.login.bind(accountManager)
+    });
+    let loadForm = postal.subscribe({
+        channel:'LoaderManager',
+        topic:'load-form',
+        callback: (data, enveloppe) => {
+            PH.loadPlanetForm(data)
         }
-   }) 
-}
+    });
+    let loadList = postal.subscribe({
+        channel:'LoaderManager',
+        topic:'load-list',
+        callback: (data, enveloppe) => {
+            PH.loadPlanetList(data)
+        }
+    });
 
-function logout(){
-    auth.logout();
 
-    fetch(uri + 'logout', {method:'head'})
-    .then(res => res.status)
-    .then(res => console.log('res :', res))
-    .catch(err => console.log('err :', err));
-    fetch = window.fetch;
-    uri = solidUri;
-    publishLoggedStatus(false, null);
-}
-
-/*
-** Fonctions de register et login, utilise l'endpoint solidserver/api/accounts/new pour creer un compte
-** et OIDCWebClient.login() pour le login
-*/
-let tmpUrl = uri;
-let registerEndpoint = 'api/accounts/new';
-let register = postal.subscribe({
-    channel:'auth',
-    topic:'register',
-    callback: (data, enveloppe) => {
-        fetch(solidUri + registerEndpoint, {
-            method:'POST',
-            headers:{
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body:`username=${data.username}&password=${data.password}&name=${data.name}&email=${data.email}`
-        })
-        .then(res => {
-            return res.url
-        })
-        .then(resUrl => {
-            tmpUrl = resUrl;
-            console.log('resUrl :', resUrl);
-        })
-        .catch(err => console.log('err :', err));
-    }
-});
-
-let login = postal.subscribe({
-    channel: 'auth',
-    topic: 'login',
-    callback:(data, enveloppe) => {
-        auth.currentSession()
-        .then(session => {
-          console.log('auth.currentSession():', session);
-          if (!session.hasCredentials()) {
-            console.log('Empty session, redirecting to login');
-            auth.login(solidUri);
-          } else {
-            console.log('Already connected');
-          } 
+    function publishLoggedStatus(islogged){
+        postal.publish({
+            channel:'auth',
+            topic:'status',
+            data:{
+                connected: islogged, 
+                webid:webid
+            }
         });
     }
-});
+    //#endregion
 
-/*
-** Fonctions de manipulation d'ACL
-*/
+
+});
 

@@ -1,5 +1,4 @@
 const solid = require('../node-solid-server');
-const express = require('express');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const port = 8443;
 
