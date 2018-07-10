@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             webid = accountManager.authWebid;
             if (webid && webid != ""){
                 PH.reloadListPath();
+                PH.loadPlanetList();
                 publishLoggedStatus(true);
             }
         } else {
@@ -46,15 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
             publishLoggedStatus(false);
         }
     });
-
-
     
     connect = document.querySelector('connect-interface');
-    planet = document.querySelector('planet-list');
+    planetList = document.querySelector('planet-list');
 
     //#region Postal Channels Configuration
     connect.setPostal(postal);
-    planet.setPostal(postal);
+    planetList.setPostal(postal);
 
     let register = postal.subscribe({
         channel:'auth',
@@ -67,19 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
         callback: accountManager.login.bind(accountManager)
     });
     let loadForm = postal.subscribe({
-        channel:'LoaderManager',
-        topic:'load-form',
+        channel:'planet',
+        topic:'addNew',
         callback: (data, enveloppe) => {
-            PH.loadPlanetForm(data)
+            PH.switchView('form')
         }
     });
-    let loadList = postal.subscribe({
-        channel:'LoaderManager',
-        topic:'load-list',
+    let editPlanet = postal.subscribe({
+        channel:'planet',
+        topic:'edit',
+        callback: (data, enveloppe) => {
+            PH.switchView('form', data)
+        }
+    });
+    let formConfirm = postal.subscribe({
+        channel:'planet',
+        topic:'formConfirm',
         callback: (data, enveloppe) => {
             PH.loadPlanetList(data)
         }
     });
+    let loadList = postal.subscribe({
+        channel:'planet',
+        topic:'formCancel',
+        callback: (data, enveloppe) => {
+            PH.switchView('list')
+        }
+    })
 
 
     function publishLoggedStatus(islogged){
@@ -93,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     //#endregion
-
 
 });
 

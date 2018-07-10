@@ -12,6 +12,9 @@
             margin-top:50px;
             margin-bottom:50px;
         }
+        .new {
+            background-color:greenyellow;
+        }
     </style>
 
     <div id="list-block">
@@ -36,13 +39,15 @@
 
         connectedCallback(){
             this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
+
+
         }
 
         onAddClick(){
             if (this.postal){
                 this.postal.publish({
-                    channel:'LoaderManager',
-                    topic:'load-form'
+                    channel:'planet',
+                    topic:'addNew'
                 });
             }
         }
@@ -50,33 +55,113 @@
         onEditClick(){
             if (this.postal){
                 this.postal.publish({
-                    channel:'LoaderManager',
-                    topic:'load-form',
+                    channel:'planet',
+                    topic:'edit',
                     data: {name:"dude"}
                 });
             }
         }
 
+        clearList(){
+            this.table.innerHTML = "";
+
+            let td = document.createElement("tr");
+            let name = document.createElement("th");
+            let radius = document.createElement("th");
+            let temp = document.createElement("th");
+
+            name.innerHTML = "Nom";
+            radius.innerHTML = "Rayon";
+            temp.innerHTML = "Température";
+
+            td.appendChild(name);
+            td.appendChild(radius);
+            td.appendChild(temp);
+
+            this.table.appendChild(td);
+        }
+
+        populateList(data, enveloppe){
+
+            console.log('data :', data);
+            if (data['old'])
+                this.populateOldList(data['old']);
+            if (data['new'])
+                this.populateNewList(data['new']);
+        
+        }
+
+        populateNewList(newList){
+            let newLine = document.createElement("tr");
+            let nameTd = document.createElement("td");
+            let radiusTd = document.createElement("td");
+            let tempTd = document.createElement("td");
+            for (let planetInfo in newList){
+                console.log('planetInfo :', planetInfo);
+                console.log('newList[planetInfo] :', newList[planetInfo]);
+                let info = newList[planetInfo];
+                if (planetInfo == 'name'){
+                    console.log("why");
+                    nameTd.innerHTML = info;
+                    nameTd.className += " new";
+                } else if (planetInfo == 'radius'){
+                    radiusTd.innerHTML = info;
+                    radiusTd.className += " new";
+                } else if (planetInfo == 'temperature'){
+                    tempTd.innerHTML = info;
+                    tempTd.className += " new";
+                }
+            }
+            newLine.appendChild(nameTd);
+            newLine.appendChild(radiusTd);
+            newLine.appendChild(tempTd);
+            newLine.className += " new";
+            this.table.appendChild(newLine);
+        }
+
+        populateOldList(oldList){
+            this.clearList();
+            for (let oldPlanet in oldList){
+                let planetLine = document.createElement("tr");
+                let nameTd = document.createElement('td');
+                let radiusTd = document.createElement('td');
+                let tempTd = document.createElement('td');
+                let name = "";
+                let radius = "";
+                let temp = "";
+                for (let planetInfo in oldList[oldPlanet]){
+                    let info = oldList[oldPlanet][planetInfo];
+                    if (planetInfo == 'http://xmlns.com/foaf/0.1/name'){
+                        nameTd.innerHTML = info; //TODO A PROTEGER
+                    } else if (planetInfo == 'http://example.org/planet#radius'){
+                        radiusTd.innerHTML = info;
+                    } else if (planetInfo == 'http://example.org/planet#temperature'){
+                        tempTd.innerHTML = info;
+                    }
+                }
+                planetLine.appendChild(nameTd);
+                planetLine.appendChild(radiusTd);
+                planetLine.appendChild(tempTd);
+                this.table.appendChild(planetLine);
+            }
+        }
+
         setPostal(){
             this.postal = postal;
+            this.setPostalChannels();
+        }
+
+        setPostalChannels(){
+            if (this.postal){
+                this.postal.subscribe({
+                    channel:'planet',
+                    topic:'addSuccess',
+                    callback: this.populateList.bind(this)
+                })
+            }
         }
     }
     window.customElements.define("planet-list", PlanetList);
 
-    /*switch (planetInfo[j].predicate.value) {
-        case 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Type': //TODO mettre ca dans la forme d'un array de types
-            key = "Type";
-            break;
-        case 'http://xmlns.com/foaf/0.1/name':
-            key = "Name";
-            break;
-        case 'http://example.org/planet#radius':
-            key = "Radius";
-            break;
-        case 'http://example.org/planet#temperature':
-            key = "Temperature";
-            break;
-        default:
-        break;
-    } */
+
 </script>
