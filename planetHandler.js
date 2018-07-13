@@ -94,11 +94,28 @@ class PlanetHandler{
             if (!planetForm || planetForm == undefined || planetForm == ""){
                 planetForm = document.createElement('planet-form');
                 planetForm.setPostal(this.postal);
+                let inputs = planetForm.shadowRoot.querySelectorAll('input');
                 document.body.appendChild(planetForm);
+                if (data){
+                    for (let i = 0; i < inputs.length; i++){
+                        if (data[i] && data[i] != "")
+                            inputs[i].value = data[i];
+                    }
+                }
             } else {
                 if (planetForm.style.display == "none"){
+                    let inputs = planetForm.shadowRoot.querySelectorAll('input');
                     planetForm.style.display = "inline";
-                    //TODO Clear form
+                    if (data){
+                        for (let i = 0; i < inputs.length; i++){
+                            if (data[i] && data[i] != "")
+                                inputs[i].value = data[i];
+                        }
+                    } else {
+                        for (let i = 0; i < inputs.length; i++){
+                            inputs[i].value = "";
+                        }
+                    }
                 }
             }
         }
@@ -159,7 +176,6 @@ class PlanetHandler{
             for (let planet in list){
                 if (list[planet][FOAF('name').value] == form.name){
 
-                    console.log("Planet already registered");
                     return null;
                 }
             }
@@ -219,6 +235,7 @@ class PlanetHandler{
                     })
                     .then(res => res.text())
                     .then(rawList => {
+                        console.log('rawList :', rawList);
                         let parsedList = this.parseList(rawList);
                         resolve(parsedList);
                     })
@@ -237,6 +254,7 @@ class PlanetHandler{
             $rdf.parse(data, this.store, this.pathToList, 'text/turtle');
             let ret = {};
             let namesList = this.store.each(undefined, RDF('Type'), PLANET('CelestialBody'));
+            console.log('namesList :', namesList);
             if (namesList && namesList.length != 0){
                 for(let i = 0; i < namesList.length; i++){
                     let planetInfo = this.store.statementsMatching(namesList[i], undefined, undefined);
@@ -255,7 +273,40 @@ class PlanetHandler{
         }
     }
 
-    populateList(planetList){
+    deletePlanet(data){
+        return new Promise((resolve, reject) => {
+            this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), FOAF('name'), data.name);
+            this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), RDF('Type'), PLANET('CelestialBody'));
+            let req = 
+            `DELETE DATA{ ${$rdf.sym(this.pathToList + '#' + encodeURI(data.name))} ${FOAF('name')} "${data.name}";
+            ${RDF('Type')} ${PLANET('CelestialBody')};`;
+
+            if (data.radius && data.radius != ""){
+                req += `${PLANET('radius')} "${data.radius}";`
+                this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), PLANET('radius'), data.radius);
+            }
+            if (data.temperature && data.temperature != ""){
+                req += `${PLANET('temperature')} "${data.temperature}";`
+                this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), PLANET('temperature'), data.temperature);
+            }
+            req += '}'
+
+            console.log('req :', req);
+            this.account.fetch(this.listPath, {
+                method:'PATCH',
+                headers: {'Content-type':'application/sparql-update'},
+                body: req
+            })
+            .then(res => {
+                console.log('res.statusText :', res.statusText); 
+                resolve();
+            })
+            .catch(err => console.log('err Deleting :', err))
+        })
+    }
+
+    editPlanet(data){
+        console.log('data :', data);
         
     }
 

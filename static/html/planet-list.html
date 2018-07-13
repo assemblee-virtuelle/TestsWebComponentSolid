@@ -15,13 +15,42 @@
         .new {
             background-color:greenyellow;
         }
+        .actionTd{
+            display:flex;
+            justify-content: space-around;
+        }
+        td{
+            border:1px solid black;
+        }
+        tr{
+            border: 1px dashed black;
+        }
+        td, tr{
+            border-collapse:collapse;
+            text-align:center;
+        }
+        .actionTd > div {
+            cursor: pointer;
+        }
+        #add > img{
+            width:50px;
+            height:50px;
+        }
+        #add{
+            margin-top: 10px;
+            display:inline-block;
+            cursor: pointer;
+            width:fit-content;
+        }
     </style>
 
     <div id="list-block">
         <h1 class="title">Liste des planètes</h1>
         <table id="tab">
         </table>
-        <button id="add">add</button>
+        <div id="add">
+            <img src="/images/plus.png" alt="add" />
+        </div>
     </div>
 </template>
 <script>
@@ -39,8 +68,6 @@
 
         connectedCallback(){
             this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
-
-
         }
 
         onAddClick(){
@@ -52,12 +79,141 @@
             }
         }
 
-        onEditClick(){
+        confirmEdit(){
+            console.log("Confirm edit");
+
+            let inputs = this.shadowRoot.querySelectorAll('td > input');
+
+            let name = inputs[0].value;
+            let radius = inputs[1].value;
+            let temp = inputs[2].value;
+
+            let infos = {
+                name = inputs[0].value,
+                radius = inputs[1].value,
+                temp = inputs[2].value
+            }
             if (this.postal){
                 this.postal.publish({
                     channel:'planet',
+                    topic:'editpub',
+                    data:infos
+                })
+                let resp = this.postal.subscribe({
+                    channel:'planet',
+                    topic: 'editResp',
+                    callback: (data, enveloppe) => {
+                        if (data.error == null){
+                            this.switchImgs(false);
+                            killInputsAddText(infos);
+                        }
+                    }
+                })
+            }
+            this.switchImgs(false);
+        }
+
+        cancelEdit(){
+            this.switchImgs(false);
+            let infos = {
+                name:this.rowInfo.oldName,
+                radius:this.rowInfo.oldRadius,
+                temp:this.rowInfo.oldTemperature
+            }
+            this.killInputsAddText(infos);
+        }
+
+        killInputsAddText(infos){
+            this.shadowRoot.querySelectorAll('td > input').forEach(e => e.parentElement.removeChild(e));
+
+            let tds = this.shadowRoot.querySelectorAll('td');
+            tds[0].innerHTML = infos.name;
+            tds[1].innerHTML = infos.radius;
+            tds[2].innerHTML = infos.temp;
+        }
+
+        switchImgs(order){
+            let images = this.shadowRoot.querySelectorAll('td.actionTd > div');
+
+            if (order == true){
+                images[0].style.display = "none";
+                images[1].style.display = "none";
+                images[2].style.display = "block";
+                images[3].style.display = "block";
+            } else {
+                images[0].style.display = "block";
+                images[1].style.display = "block";
+                images[2].style.display = "none";
+                images[3].style.display = "none";
+            }
+        }
+
+
+        onEditClick(e, postal){
+            if (postal){
+                let ret = {};
+                let line = e.currentTarget.parentNode.parentNode;
+                let nameTd = line.querySelector('td.name');
+                let radiusTd = line.querySelector('td.radius');
+                let tempTd = line.querySelector('td.temp');
+
+                this.switchImgs(true);
+
+                ret['oldName'] = nameTd.innerText;
+                nameTd.innerHTML = "";
+
+                let nameInput = document.createElement('input');
+                nameInput.value = ret['oldName'];
+                nameInput.setAttribute('type', 'text');
+                nameTd.appendChild(nameInput);
+
+                if (radiusTd && radiusTd != ""){
+                    ret['oldRadius'] = radiusTd.innerText;
+                    radiusTd.innerHTML = "";
+                    let radiusInput = document.createElement('input');
+                    radiusInput.value = ret['oldRadius'];
+                    radiusInput.setAttribute('type', 'text');
+                    radiusTd.appendChild(radiusInput);
+                }
+                if (tempTd && tempTd != ""){
+                    ret['oldTemperature'] = tempTd.innerText;
+                    tempTd.innerHTML = "";
+                    let tempInput = document.createElement('input');
+                    tempInput.value = ret['oldTemperature'];
+                    tempInput.setAttribute('type', 'text');
+                    tempTd.appendChild(tempInput);
+                }
+
+                this.rowInfo = ret;
+
+                /*
+                postal.publish({
+                    channel:'planet',
                     topic:'edit',
-                    data: {name:"dude"}
+                    data: ret
+                });*/
+                
+            }
+        }
+
+        onDeleteClick(e, postal){
+            if (postal){
+                let ret = {};
+                let line = e.currentTarget.parentNode.parentNode;
+                let name = line.querySelector('td.name').innerText;
+                ret['name'] = name;
+                let radius = line.querySelector('td.radius');
+                if (radius && radius != ""){
+                    ret['radius'] = radius.innerText;
+                }
+                let temp = line.querySelector('td.temp');
+                if (temp && temp != ""){
+                    ret['temperature'] = temp.innerText;
+                }
+                postal.publish({
+                    channel:'planet',
+                    topic:'delete',
+                    data: ret
                 });
             }
         }
@@ -69,14 +225,17 @@
             let name = document.createElement("th");
             let radius = document.createElement("th");
             let temp = document.createElement("th");
+            let action = document.createElement("th");
 
             name.innerHTML = "Nom";
             radius.innerHTML = "Rayon";
             temp.innerHTML = "Température";
+            action.innerHTML = "Action";
 
             td.appendChild(name);
             td.appendChild(radius);
             td.appendChild(temp);
+            td.appendChild(action);
 
             this.table.appendChild(td);
         }
@@ -88,7 +247,63 @@
                 this.populateOldList(data['old']);
             if (data['new'])
                 this.populateNewList(data['new']);
-        
+        }
+
+        createBlocks(rows){
+
+            let newLine = rows.newLine;
+            let nameTd = rows.nameTd;
+            let tempTd = rows.tempTd;
+            let radiusTd = rows.radiusTd;
+
+            let actionTd = document.createElement('td');
+            let confirmDiv = document.createElement('div');
+            let cancelDiv = document.createElement('div');
+            let editBtnBlock = document.createElement('div');
+            let deleteBtnBlock = document.createElement('div');
+            let editBtnImg = document.createElement('img');
+            let deleteBtnImg = document.createElement('img');
+            let confirmImg = document.createElement('img');
+            let cancelImg = document.createElement('img');
+            
+            actionTd.className = "actionTd";
+            
+            confirmDiv.addEventListener('click', this.confirmEdit.bind(this));
+            confirmImg.setAttribute('src', '/images/confirm.png');
+            confirmDiv.appendChild(confirmImg);
+            confirmDiv.style.display = "none";
+            
+            cancelDiv.addEventListener('click', this.cancelEdit.bind(this));
+            cancelImg.setAttribute('src', '/images/cancel.png');
+            cancelDiv.appendChild(cancelImg);
+            cancelDiv.style.display = "none";
+
+            editBtnImg.setAttribute('src', '/images/Edit.png');
+            editBtnBlock.appendChild(editBtnImg);
+            editBtnBlock.addEventListener('click', e => {
+                this.onEditClick(e, this.postal);
+            });
+            
+            deleteBtnImg.setAttribute('src', '/images/delete.png');
+            deleteBtnBlock.appendChild(deleteBtnImg);
+            deleteBtnBlock.addEventListener('click', e => {
+                this.onDeleteClick(e, this.postal);
+            });
+                
+
+            actionTd.appendChild(editBtnBlock);
+            actionTd.appendChild(deleteBtnBlock);
+            actionTd.appendChild(confirmDiv);
+            actionTd.appendChild(cancelDiv);
+
+            newLine.appendChild(nameTd);
+            newLine.appendChild(radiusTd);
+            newLine.appendChild(tempTd);
+            newLine.appendChild(actionTd);
+            if (rows.isnew == true)
+                newLine.className += " new";
+            this.table.appendChild(newLine);
+
         }
 
         populateNewList(newList){
@@ -103,20 +318,26 @@
                 if (planetInfo == 'name'){
                     console.log("why");
                     nameTd.innerHTML = info;
-                    nameTd.className += " new";
+                    nameTd.className += "name new";
                 } else if (planetInfo == 'radius'){
                     radiusTd.innerHTML = info;
-                    radiusTd.className += " new";
+                    radiusTd.className += "radius new";
                 } else if (planetInfo == 'temperature'){
                     tempTd.innerHTML = info;
-                    tempTd.className += " new";
+                    tempTd.className += "temp new";
                 }
             }
-            newLine.appendChild(nameTd);
-            newLine.appendChild(radiusTd);
-            newLine.appendChild(tempTd);
-            newLine.className += " new";
-            this.table.appendChild(newLine);
+
+            let rows = {
+                newLine:newLine,
+                nameTd:nameTd,
+                radiusTd:radiusTd,
+                tempTd:tempTd,
+                isnew:true
+            }
+
+            this.createBlocks(rows);
+
         }
 
         populateOldList(oldList){
@@ -133,16 +354,26 @@
                     let info = oldList[oldPlanet][planetInfo];
                     if (planetInfo == 'http://xmlns.com/foaf/0.1/name'){
                         nameTd.innerHTML = info; //TODO A PROTEGER
+                        nameTd.className = "name";
                     } else if (planetInfo == 'http://example.org/planet#radius'){
                         radiusTd.innerHTML = info;
+                        radiusTd.className = "radius"
                     } else if (planetInfo == 'http://example.org/planet#temperature'){
                         tempTd.innerHTML = info;
+                        tempTd.className = "temp"
                     }
                 }
-                planetLine.appendChild(nameTd);
-                planetLine.appendChild(radiusTd);
-                planetLine.appendChild(tempTd);
-                this.table.appendChild(planetLine);
+
+                let rows = {
+                    newLine:planetLine,
+                    nameTd:nameTd,
+                    radiusTd:radiusTd,
+                    tempTd:tempTd,
+                    isnew:false
+                }
+    
+                this.createBlocks(rows);
+
             }
         }
 

@@ -73,7 +73,7 @@ class AccountManager{
     }
 
     logout(){
-        //in fixing progress
+        this.auth.logout();
     }
 
     //#region Getters and Setters

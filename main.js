@@ -65,6 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         topic: 'login',
         callback: accountManager.login.bind(accountManager)
     });
+    let logout = postal.subscribe({
+        channel:'auth',
+        topic:'logout',
+        callback: accountManager.logout.bind(accountManager)
+    });
     let loadForm = postal.subscribe({
         channel:'planet',
         topic:'addNew',
@@ -76,7 +81,16 @@ document.addEventListener('DOMContentLoaded', () => {
         channel:'planet',
         topic:'edit',
         callback: (data, enveloppe) => {
-            PH.switchView('form', data)
+            PH.editPlanet(data)
+        }
+    });
+    let deletePlanet = postal.subscribe({
+        channel:'planet',
+        topic:'delete',
+        callback: (data, enveloppe) => {
+            PH.deletePlanet(data).then(res => {
+                PH.loadPlanetList();
+            })
         }
     });
     let formConfirm = postal.subscribe({

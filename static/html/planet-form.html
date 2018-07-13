@@ -75,8 +75,7 @@
                         ret[dataForm[i].name] = dataForm[i].value;
                     }
                 }
-                console.log('dataForm :', ret);
-                if (this.postal && !this.isEmpty(ret)){
+                if (this.postal && !this.isEmpty(ret) && ret['name'] && ret['name'] != ""){
                     this.postal.publish({
                         channel:'planet',
                         topic:'formConfirm',
