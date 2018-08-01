@@ -5,120 +5,39 @@ const isEmpty = require('./utils');
 var RDF = $rdf.Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 var PLANET = $rdf.Namespace('http://example.org/planet#');
 var FOAF = $rdf.Namespace('http://xmlns.com/foaf/0.1/');
-
+var TURTLE = $rdf.Namespace('http://www.w3.org/ns/iana/media-types/text/turtle#');
 class PlanetHandler{
     constructor(args = {}){
         extend(this, args);
-        
+
         if (!this.postal){
             throw new Error("Postal not set");
         }
         if (!this.account){
             throw new Error("Fetch not set");
         }
-        if (!this.planetDir || !this.planetListName){
+        if (!this.planetListName || !this.planetFileName){
             throw new Error("Missing planet list info");
         }
-        this.pathToList = this.account.uri + this.planetDir + '/' + this.planetListName;
+        this.pathToList = this.account.uri + this.planetListName + '/';
         this.store = $rdf.graph();
+        this.planetCount = 0;
+        this.planetList = {};
     }
 
-    loadPlanetList(data){
-        console.log("load list");
-
-        if (!isEmpty(data)) {
-            this.addNewPlanet(data)
-            .then(res => {
-                console.log('Planet created, populating...');
-                this.postal.publish({
-                    channel:'planet',
-                    topic:'addSuccess',
-                    data: res
+    loadPlanetList(){
+        this.fetchPlanetList()
+        .then(list => {
+            this.planetList = {};
+            for(let i = 0; i < this.planetCount; i++){
+                this.fetchPlanet(list[i]).then(planetInfo => {
+                    this.planetList[planetInfo.uri] = planetInfo;
                 });
-                this.switchView('list');
-            })
-            .catch(err => {
-                console.log('errcreating planet :', err);
-                this.postal.publish({
-                    channel:'planet',
-                    topic:'addErr',
-                    data: err
-                })
-            })
-        } else {
-            this.fetchPlanetList()
-            .then(res => {
-                console.log("fetchin list");
-                this.postal.publish({
-                    channel: 'planet',
-                    topic:'addSuccess',
-                    data: {
-                        'old': res,
-                    }
-                });
-                this.switchView('list');
-            })
-            .catch(err => {
-                console.log('errfetch :', err);
-                this.postal.publish({
-                    channel:'planet',
-                    topic:'addErr',
-                    data: err
-                })
-            })
-        }
-    }
-
-    switchView(number, data = null){
-        let planetForm = document.querySelector('planet-form');
-        let planetList = document.querySelector('planet-list');
-
-        if (number == 1 || number == 'list'){
-            if (planetForm && planetForm != undefined && planetForm.style.display != "none"){
-                planetForm.style.display = "none";
             }
-            
-            if (!planetList || planetList == undefined || planetList == ""){
-                planetList = document.createElement('planet-list');
-                planetList.setPostal(this.postal);
-                document.body.appendChild(planetList);
-            } else if (planetList.style.display == "none"){
-                planetList.style.display = "inline";
-            }
-
-        } else if (number == 2 || number == "form") {
-            if (planetList && planetList != undefined && planetList.style.display != "none"){
-                planetList.style.display = "none";
-            }
-
-            if (!planetForm || planetForm == undefined || planetForm == ""){
-                planetForm = document.createElement('planet-form');
-                planetForm.setPostal(this.postal);
-                let inputs = planetForm.shadowRoot.querySelectorAll('input');
-                document.body.appendChild(planetForm);
-                if (data){
-                    for (let i = 0; i < inputs.length; i++){
-                        if (data[i] && data[i] != "")
-                            inputs[i].value = data[i];
-                    }
-                }
-            } else {
-                if (planetForm.style.display == "none"){
-                    let inputs = planetForm.shadowRoot.querySelectorAll('input');
-                    planetForm.style.display = "inline";
-                    if (data){
-                        for (let i = 0; i < inputs.length; i++){
-                            if (data[i] && data[i] != "")
-                                inputs[i].value = data[i];
-                        }
-                    } else {
-                        for (let i = 0; i < inputs.length; i++){
-                            inputs[i].value = "";
-                        }
-                    }
-                }
-            }
-        }
+        })
+        .catch(err => {
+            console.log('errfetch :', err);
+        })
     }
 
     /**
@@ -136,13 +55,11 @@ class PlanetHandler{
                 if (status == 200)
                     resolve("Exists");
                 else{
-                    this.createPlanetList().then(res => resolve("New"))
-                    .catch(err => reject(err));
+                    reject();
                 }
             })
             .catch(err => {
-                this.createPlanetList().then(res => resolve("New"))
-                .catch(err => reject(err));
+                reject(err);
             })
 
         })
@@ -150,10 +67,12 @@ class PlanetHandler{
 
     createPlanetList(){
         return new Promise((resolve, reject) => {
-            this.account.fetch(this.pathToList, {
-                method: 'PUT',
+            this.account.fetch(this.account.uri, {
+                method: 'POST',
                 headers: {
                     'Content-Type':'text/turtle',
+                    'Slug':this.planetListName,
+                    'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'
                 }
             })
             .then(res => {
@@ -167,151 +86,170 @@ class PlanetHandler{
         });
     }
 
-    parseFormIntoTriples(list, form){
-        let res = null;
+    // parseFormIntoTriples(list, form){
+    //     let res = null;
 
-        console.log('list :', list);
+    //     console.log('list :', list);
 
-        if (form.name){
-            for (let planet in list){
-                if (list[planet][FOAF('name').value] == form.name){
+    //     if (form.name){
+    //         for (let planet in list){
+    //             if (list[planet][FOAF('name').value] == form.name){
 
-                    return null;
-                }
-            }
-            var className = $rdf.sym(this.pathToList + '#' + encodeURI(form.name));
-            this.store.add(className, RDF('Type'), PLANET('CelestialBody'));
-            this.store.add(className, FOAF('name'), form.name);
-        }
-        if (form.radius){
-            this.store.add(className, PLANET('radius'), form.radius);
-        }
-        if (form.temperature){
-            this.store.add(className, PLANET('temperature'), form.temperature);
-        }
-        res = $rdf.serialize(null, this.store, this.pathToList, 'text/turtle');
-        return res;
-    }
+    //                 return null;
+    //             }
+    //         }
+    //         var className = $rdf.sym(this.pathToList + '#' + encodeURI(form.name));
+    //         this.store.add(className, RDF('Type'), PLANET('CelestialBody'));
+    //         this.store.add(className, FOAF('name'), form.name);
+    //     }
+    //     if (form.radius){
+    //         this.store.add(className, PLANET('radius'), form.radius);
+    //     }
+    //     if (form.temperature){
+    //         this.store.add(className, PLANET('temperature'), form.temperature);
+    //     }
+    //     res = $rdf.serialize(null, this.store, this.pathToList, 'text/turtle');
+    //     return res;
+    // }
 
     addNewPlanet(data){
+        console.log('this.planetList :', this.planetList);
         return new Promise((resolve, reject) => {
-            this.fetchPlanetList()
-            .then(list => {
-                let triples = this.parseFormIntoTriples(list, data);
-                if (triples != null && triples != ""){
+
+            if (data['name']){
+                let exists = false;
+                for (const key in this.planetList) {
+                    if (this.planetList.hasOwnProperty(key) && this.planetList[key][PLANET('name')] == data['name']) {
+                        reject("Name already exists");
+                        exists = true;
+                    }
+                }
+                if(!exists){
                     this.account.fetch(this.pathToList, {
-                        method: 'PUT',
+                        method: 'POST',
                         headers: {
-                            'Content-Type':'text/turtle',
-                        },
-                        body: triples
+                            'Content-type': 'text/turtle',
+                            'Link': '<http://www.w3.org/ns/ldp#Resource>; rel="type"',
+                            'Slug': this.planetFileName
+                        }
                     })
-                    .then(res => {
-                        let ret = {
-                            'old':list,
-                            'new':data
-                        };
-                        resolve(ret);
+                    .then(res => res.headers)
+                    .then(h => {
+                        let relativeUri = h.get('Location');
+                        let uri = this.account.uri + relativeUri;
+                        let newPlanet = {};
+                        newPlanet[PLANET('name')] = data['name'];
+                        newPlanet['uri'] = uri;
+                        this.planetList[uri] = newPlanet;
+                        resolve(newPlanet);
                     })
-                    .catch(err => {
-                        reject(err);
-                    });
-                } else{
-                    reject("Planet is already registered to the Interuniverse Planet Database, please retry with another name");
+                    .catch(err => reject(err));
+                }
+            } else {
+                reject("No name given");
+            }
+        });
+    }
+
+    editPlanet(data, uri){
+        return new Promise((resolve, reject) => {
+            if (this.uriExists(uri)){
+
+            } else {
+                reject("Planet does not exists");
+            }
+        })
+    }
+
+    uriExists(uri){
+        for (const key in this.planetList) {
+            if (this.planetList.hasOwnProperty(key) && uri == key) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @description "Get the uris of the turtle resources into the container"
+     * @param list "Liste in turtle triples"
+     */
+    getTurtlesFiles(list){
+        this.store = $rdf.graph();
+        let i = 0;
+
+        $rdf.parse(list, this.store, this.pathToList, 'text/turtle');
+        let uris = this.store.statementsMatching(undefined, RDF('type'), TURTLE('Resource'));
+        let tab = [];
+
+        while(i < uris.length){
+            tab.push(uris[i].subject.value);
+            i++;
+        }
+        this.planetCount = i;
+        return tab;
+    }
+
+    fetchPlanet(uri){
+        return new Promise((resolve, reject) => {
+            this.account.fetch(uri, {
+                method: 'GET',
+                headers: {'Content-type': 'text/turtle'}
+            })
+            .then(res => res.text())
+            .then(rawPlanet => {
+                if (rawPlanet && rawPlanet != ""){
+                    let planet = this.parsePlanetTriples(rawPlanet, uri);
+                    resolve(planet);
+                } else {
+                    console.log("planet empty");
+                    reject("Planet is empty");
                 }
             })
-        });
+            .catch(err => reject(err));
+        })
+    }
+
+    parsePlanetTriples(planet, uri){
+        let ret = {};
+        let store = $rdf.graph();
+
+        $rdf.parse(planet, store, uri, 'text/turtle');
+        let planetInfo = store.statementsMatching(PLANET('GeneralInfo'), undefined, undefined);
+        for(let i = 0; i < planetInfo.length; i++){
+            ret[planetInfo[i].predicate.value] = planetInfo[i].object.value;
+        }
+        ret.store = store;
+        ret.uri = uri;
+        return ret;
     }
 
     fetchPlanetList(){
         return new Promise((resolve, reject) => {
             this.hasPlanetList().then(res => {
-                if (res == "New"){
-                    resolve(null);
-                } else {
-                    this.account.fetch(this.pathToList, {
-                        method: 'GET',
-                        headers: {'Content-type':'text/turtle'}
-                    })
-                    .then(res => res.text())
-                    .then(rawList => {
-                        console.log('rawList :', rawList);
-                        let parsedList = this.parseList(rawList);
-                        resolve(parsedList);
-                    })
-                    .catch(err => console.log('err fetching list :', err))
-                }
+                this.account.fetch(this.pathToList, {
+                    method: 'GET',
+                    headers: {'Content-type':'text/turtle'}
+                })
+                .then(res => res.text())
+                .then(rawList => {
+                    let planetList = this.getTurtlesFiles(rawList);
+                    resolve(planetList);
+                })
+                .catch(err => {
+                    console.log('err fetching list :', err);
+                    reject(err);
+                })
             })
             .catch(err => {
-                throw new Error(err);
+                this.createPlanetList().then(res => resolve("New"))
+                .catch(err => reject(err));
             });
         });
     }
 
-    parseList(data){
-        try {
-            
-            $rdf.parse(data, this.store, this.pathToList, 'text/turtle');
-            let ret = {};
-            let namesList = this.store.each(undefined, RDF('Type'), PLANET('CelestialBody'));
-            console.log('namesList :', namesList);
-            if (namesList && namesList.length != 0){
-                for(let i = 0; i < namesList.length; i++){
-                    let planetInfo = this.store.statementsMatching(namesList[i], undefined, undefined);
-                    if (planetInfo && planetInfo.length != 0){
-                        ret[namesList[i]] = {};
-                        for(let j = 0; j < planetInfo.length; j++){
-                            ret[namesList[i]][planetInfo[j].predicate.value] = planetInfo[j].object.value;
-                        }
-                    }
-                }
-            }
-            return ret;
-        } catch (error) {
-            console.log('error :', error);
-            return null;
-        }
-    }
-
-    deletePlanet(data){
-        return new Promise((resolve, reject) => {
-            this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), FOAF('name'), data.name);
-            this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), RDF('Type'), PLANET('CelestialBody'));
-            let req = 
-            `DELETE DATA{ ${$rdf.sym(this.pathToList + '#' + encodeURI(data.name))} ${FOAF('name')} "${data.name}";
-            ${RDF('Type')} ${PLANET('CelestialBody')};`;
-
-            if (data.radius && data.radius != ""){
-                req += `${PLANET('radius')} "${data.radius}";`
-                this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), PLANET('radius'), data.radius);
-            }
-            if (data.temperature && data.temperature != ""){
-                req += `${PLANET('temperature')} "${data.temperature}";`
-                this.store.removeMatches($rdf.sym(this.pathToList + '#' + encodeURI(data.name)), PLANET('temperature'), data.temperature);
-            }
-            req += '}'
-
-            console.log('req :', req);
-            this.account.fetch(this.listPath, {
-                method:'PATCH',
-                headers: {'Content-type':'application/sparql-update'},
-                body: req
-            })
-            .then(res => {
-                console.log('res.statusText :', res.statusText); 
-                resolve();
-            })
-            .catch(err => console.log('err Deleting :', err))
-        })
-    }
-
-    editPlanet(data){
-        console.log('data :', data);
-        
-    }
-
     reloadListPath(){ //TODO Faire une method qui se trigger lors de la co/deco dans accountmanager
-        this.pathToList = this.account.uri + this.planetDir + '/' + this.planetListName;
+        this.pathToList = this.account.uri + this.planetListName + '/';
     }
 
     set listPath(pathToList){

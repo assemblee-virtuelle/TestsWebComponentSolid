@@ -23,12 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
         registerEndpoint: registerEndpoint
     };
     var accountManager = new AccountManager(accOptions);
-
     let options = {
         account: accountManager,
         postal:postal,
-        planetDir: 'planets',
-        planetListName: 'PlanetList.ttl'
+        planetListName: 'PlanetList',
+        planetFileName: 'Planet'
     }
     var PH = new PlanetHandler(options);
 
@@ -37,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(val){
             webid = accountManager.authWebid;
             if (webid && webid != ""){
+                console.log('accountManager :', accountManager);
+                
                 PH.reloadListPath();
                 PH.loadPlanetList();
                 publishLoggedStatus(true);
@@ -70,18 +71,25 @@ document.addEventListener('DOMContentLoaded', () => {
         topic:'logout',
         callback: accountManager.logout.bind(accountManager)
     });
-    let loadForm = postal.subscribe({
+    postal.subscribe({
         channel:'planet',
         topic:'addNew',
         callback: (data, enveloppe) => {
-            PH.switchView('form')
+            let test = [];
+            test['name'] = "toto";
+
+            PH.addNewPlanet(test)
+            .then(res => {
+                console.log('planet addded :', res);
+            })
+            .catch(err => console.log('err adding new planet:', err))
         }
     });
     let editPlanet = postal.subscribe({
         channel:'planet',
         topic:'edit',
         callback: (data, enveloppe) => {
-            PH.editPlanet(data)
+            //PH.editPlanet(data)
         }
     });
     let deletePlanet = postal.subscribe({

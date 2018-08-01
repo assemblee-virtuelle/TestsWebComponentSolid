@@ -6,3 +6,4 @@ LDP
 static/runtime.*
 static/vendors.*
 static/compiledJs
+.vscode/launch.json

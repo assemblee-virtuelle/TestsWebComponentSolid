@@ -4,8 +4,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   entry: {
-    'compiledJs/main':'./main.js',
-    'compiledJs/cardHandler':'./cardHandler.js'
+    'compiledJs/main':'./main.js'
   },
   output: {
     filename: '[name].[chunkhash].js',

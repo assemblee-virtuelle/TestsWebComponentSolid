@@ -89,14 +89,14 @@
             let temp = inputs[2].value;
 
             let infos = {
-                name = inputs[0].value,
-                radius = inputs[1].value,
-                temp = inputs[2].value
+                name: inputs[0].value,
+                radius: inputs[1].value,
+                temp: inputs[2].value
             }
             if (this.postal){
                 this.postal.publish({
                     channel:'planet',
-                    topic:'editpub',
+                    topic:'edit',
                     data:infos
                 })
                 let resp = this.postal.subscribe({
