@@ -33,7 +33,11 @@
             this.postal = postal;
             this.planetForm.setPostal(postal);
             this.planetList.setPostal(postal);
-            setPostalChannels();
+            this.setPostalChannels();
+        }
+
+        generateList(list){
+            this.planetList.generateList(list);
         }
 
         setPostalChannels(){
@@ -41,11 +45,22 @@
                 channel:'planetInterface',
                 topic:'switchToForm',
                 callback: (data, enveloppe) => {
-                    planetList.className = "hidden";
-                    planetForm.className = "shown";
+                    this.planetList.className = "hidden";
+                    this.planetForm.className = "shown";
                     if (data != null){
-
+                        this.planetForm.setFormData(data['fields'], data['uri']);
+                    } else {
+                        this.planetForm.resetFormData();
                     }
+                }
+            })
+
+            this.postal.subscribe({
+                channel:'planetInterface',
+                topic:'switchToList',
+                callback: (data, enveloppe) => {
+                    this.planetList.className = "shown";
+                    this.planetForm.className = "hidden";
                 }
             })
         }

@@ -65,17 +65,37 @@
                     this.cancel();
                 });
                 let inputs = this.planetForm.querySelectorAll('input');
-                this.inputList = [];
+                this.inputList = {};
                 for (let i = 0; i < inputs.length; i++){
-                    this.inputList.push(inputs[i].name);
+                    this.inputList[inputs[i].name] = inputs[i];
                 }
             }
 
             submit(){
-                console.log("submit form");
-                let dataForm = this.planetForm.querySelectorAll('input');
+                let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
                 let ret = {};
-                
+
+                let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
+                for(let i = 0; i < dataForm.length; i++){
+                    if (dataForm[i].value && dataForm[i].value != "")
+                    ret[dataForm[i].name] = dataForm[i].value;
+                }
+                if (!uri || uri == "" && !this.isEmpty(ret)){
+                    this.postal.publish({
+                        channel:'planet',
+                        topic:'addNewConfirm',
+                        data:ret
+                    })
+                } else {
+                    let _data = {};
+                    _data['form'] = ret;
+                    _data['uri'] = uri;
+                    this.postal.publish({
+                        channel:'planet',
+                        topic:'editConfirm',
+                        data:_data
+                    })
+                }
             }
 
             isEmpty(obj) {
@@ -103,26 +123,37 @@
             }
 
             setFormData(fields, uri){
-                for(const fieldName in fields){
-                    if (fields.hasOwnProperty(fieldName)){
-                        switch(fieldName){ //TODO: Transform into non switch method
-                            case 'http://example.org/planet#name':
-                            this.inputList['name'] = fields[fieldName];
-                            break;
-                            case 'http://example.org/planet#radius':
-                            this.inputList['radius'] = fields[fieldName];
-                            break;
-                            case 'http://example.org/planet#temperature':
-                            this.inputList['temperature'] = fields[fieldName];
-                            break;
+                if (uri){
+                    for(const fieldName in fields){
+                        if (fields.hasOwnProperty(fieldName)){
+                            switch(fieldName){ //TODO: Transform into non switch method
+                                case 'http://example.org/planet#name':
+                                this.inputList['name'].value = fields[fieldName];
+                                break;
+                                case 'http://example.org/planet#radius':
+                                this.inputList['radius'].value = fields[fieldName];
+                                break;
+                                case 'http://example.org/planet#temperature':
+                                this.inputList['temperature'].value = fields[fieldName];
+                                break;
+                            }
                         }
                     }
+                    this.shadowRoot.querySelector('input[name="uri"]').value = uri;
+                } else {
+                    console.log("no uri set");
                 }
             }
 
-            setPostalChannels(){
+            resetFormData(){
+                for(const field in this.inputList){
+                    if (this.inputList.hasOwnProperty(field)){
 
+                        this.inputList[field].value = "";
+                    }
+                }
             }
+            
         }
         window.customElements.define("planet-form", PlanetForm);
     </script>

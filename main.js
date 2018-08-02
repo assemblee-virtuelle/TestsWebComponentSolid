@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     var PH = new PlanetHandler(options);
 
+
+
     accountManager.checkConnect()
     .then(val => {
         if(val){
@@ -39,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('accountManager :', accountManager);
                 
                 PH.reloadListPath();
-                PH.loadPlanetList();
+                loadList();
                 publishLoggedStatus(true);
             }
         } else {
@@ -48,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
             publishLoggedStatus(false);
         }
     });
+
+
     
     connectInterface = document.querySelector('connect-interface');
     planetInterface = document.querySelector('planet-interface');
@@ -55,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //#region Postal Channels Configuration
     connectInterface.setPostal(postal);
     planetInterface.setPostal(postal);
+
 
     let register = postal.subscribe({
         channel:'auth',
@@ -75,23 +80,23 @@ document.addEventListener('DOMContentLoaded', () => {
         channel:'planet',
         topic:'addNew',
         callback: (data, enveloppe) => {
-            let test = [];
-            test['name'] = "totto";
-            test['temperature'] = "Too hot";
-            test['radius'] = "Larger than my ex";
-
-            PH.addNewPlanet(test)
-            .then(res => {
-                console.log('planet addded :', res);
-            })
-            .catch(err => console.log('err adding new planet:', err))
+            postal.publish({
+                channel:'planetInterface',
+                topic:'switchToForm',
+                data: null
+            });
         }
     });
     let editPlanet = postal.subscribe({
         channel:'planet',
-        topic:'edit',
+        topic:'editConfirm',
         callback: (data, enveloppe) => {
-            //PH.editPlanet(data)
+            console.log("edit confirm");
+            PH.editPlanet(data['form'], data['uri'])
+            .then(res => {
+                console.log("edited :", res);
+            })
+            .catch(err => console.log('err editing :', err))
         }
     });
     let deletePlanet = postal.subscribe({
@@ -103,18 +108,42 @@ document.addEventListener('DOMContentLoaded', () => {
             })
         }
     });
-    let formConfirm = postal.subscribe({
+    let addNewPlanet = postal.subscribe({
         channel:'planet',
-        topic:'formConfirm',
+        topic:'addNewConfirm',
         callback: (data, enveloppe) => {
-            PH.loadPlanetList(data)
+            PH.addNewPlanet(data)
+            .then(res => {
+
+                console.log('planet addded :', res);
+                loadList();
+                switchToList();
+            })
+            .catch(err => console.log('err adding new planet:', err))
         }
     });
-    let loadList = postal.subscribe({
+
+    function switchToList(){
+        postal.publish({
+            channel:'planetInterface',
+            topic:'switchToList',
+            data: null
+        });
+    }
+
+    let cancelForm = postal.subscribe({
         channel:'planet',
         topic:'formCancel',
         callback: (data, enveloppe) => {
-            PH.switchView('list')
+            switchToList();
+        }
+    })
+
+    let loadListChannel = postal.subscribe({
+        channel:'planet',
+        topic: 'loadList',
+        callback: (data, enveloppe) => {
+            loadList();
         }
     })
 
@@ -130,6 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     //#endregion
+
+    function loadList(){
+        PH.loadPlanetList().then(list => {
+            console.log('list :', list);
+
+            planetInterface.generateList(list);
+        })
+        
+    }
 
 });
 

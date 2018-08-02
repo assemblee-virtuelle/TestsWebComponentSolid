@@ -26,18 +26,26 @@ class PlanetHandler{
     }
 
     loadPlanetList(){
-        this.fetchPlanetList()
-        .then(list => {
-            this.planetList = {};
-            for(let i = 0; i < this.planetCount; i++){
-                this.fetchPlanet(list[i]).then(planetInfo => {
-                    this.planetList[planetInfo.uri] = planetInfo;
-                    console.log('planet fetched :', planetInfo.uri);
+        return new Promise((resolve, reject) => {
+            this.fetchPlanetList()
+            .then(list => {
+                this.planetList = {};
+                let promisesArray = [];
+                for(let i = 0; i < this.planetCount; i++){
+                    promisesArray.push(this.fetchPlanet(list[i]));
+                }
+                Promise.all(promisesArray)
+                .then(list => {
+                    for(let i = 0; i < list.length; i++){
+                        this.planetList[list[i].uri] = list[i];
+                    }
+                    resolve(this.planetList);
                 });
-            }
-        })
-        .catch(err => {
-            console.log('errfetch :', err);
+            })
+            .catch(err => {
+                reject(err);
+                console.log('errfetch :', err);
+            })
         })
     }
 
@@ -153,7 +161,7 @@ class PlanetHandler{
     editPlanet(data, uri){
         return new Promise((resolve, reject) => {
             if (this.uriExists(uri)){
-
+                console.log("edit planet at ", uri);
             } else {
                 reject("Planet does not exists");
             }
