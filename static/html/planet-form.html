@@ -31,6 +31,7 @@
                         <label for="temp" >Température en surface (°C) : </label>
                         <input type="text" id="temp" name="temperature">
                     </div>
+                    <input type="hidden" name="uri" value="">
                 </div>
                 <div id="buttons">
                     <button id="btn_submit">SAVE</button>
@@ -63,6 +64,11 @@
                     e.preventDefault();
                     this.cancel();
                 });
+                let inputs = this.planetForm.querySelectorAll('input');
+                this.inputList = [];
+                for (let i = 0; i < inputs.length; i++){
+                    this.inputList.push(inputs[i].name);
+                }
             }
 
             submit(){
@@ -70,18 +76,6 @@
                 let dataForm = this.planetForm.querySelectorAll('input');
                 let ret = {};
                 
-                for(let i = 0; i < dataForm.length; i++){
-                    if (dataForm[i].value && dataForm[i].value != ""){
-                        ret[dataForm[i].name] = dataForm[i].value;
-                    }
-                }
-                if (this.postal && !this.isEmpty(ret) && ret['name'] && ret['name'] != ""){
-                    this.postal.publish({
-                        channel:'planet',
-                        topic:'formConfirm',
-                        data: ret
-                    });
-                }
             }
 
             isEmpty(obj) {
@@ -96,7 +90,6 @@
             }
 
             cancel(){
-                console.log("return to list");
                 if (this.postal){
                     this.postal.publish({
                         channel:'planet',
@@ -105,8 +98,30 @@
                 }
             }
 
-            setPostal(){
+            setPostal(postal){
                 this.postal = postal;
+            }
+
+            setFormData(fields, uri){
+                for(const fieldName in fields){
+                    if (fields.hasOwnProperty(fieldName)){
+                        switch(fieldName){ //TODO: Transform into non switch method
+                            case 'http://example.org/planet#name':
+                            this.inputList['name'] = fields[fieldName];
+                            break;
+                            case 'http://example.org/planet#radius':
+                            this.inputList['radius'] = fields[fieldName];
+                            break;
+                            case 'http://example.org/planet#temperature':
+                            this.inputList['temperature'] = fields[fieldName];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            setPostalChannels(){
+
             }
         }
         window.customElements.define("planet-form", PlanetForm);

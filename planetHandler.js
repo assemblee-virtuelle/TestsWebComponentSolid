@@ -32,6 +32,7 @@ class PlanetHandler{
             for(let i = 0; i < this.planetCount; i++){
                 this.fetchPlanet(list[i]).then(planetInfo => {
                     this.planetList[planetInfo.uri] = planetInfo;
+                    console.log('planet fetched :', planetInfo.uri);
                 });
             }
         })
@@ -86,34 +87,23 @@ class PlanetHandler{
         });
     }
 
-    // parseFormIntoTriples(list, form){
-    //     let res = null;
+    decodeDataIntoTriples(data){
+        let ret = {};
+        let triples = null;
+        let store = $rdf.graph();
 
-    //     console.log('list :', list);
-
-    //     if (form.name){
-    //         for (let planet in list){
-    //             if (list[planet][FOAF('name').value] == form.name){
-
-    //                 return null;
-    //             }
-    //         }
-    //         var className = $rdf.sym(this.pathToList + '#' + encodeURI(form.name));
-    //         this.store.add(className, RDF('Type'), PLANET('CelestialBody'));
-    //         this.store.add(className, FOAF('name'), form.name);
-    //     }
-    //     if (form.radius){
-    //         this.store.add(className, PLANET('radius'), form.radius);
-    //     }
-    //     if (form.temperature){
-    //         this.store.add(className, PLANET('temperature'), form.temperature);
-    //     }
-    //     res = $rdf.serialize(null, this.store, this.pathToList, 'text/turtle');
-    //     return res;
-    // }
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                store.add(PLANET('GeneralInfo'), PLANET(key), data[key])
+            }
+        }
+        triples = $rdf.serialize(null, store, this.pathToList, 'text/turtle');
+        ret['triples'] = triples;
+        ret['store'] = store;
+        return ret;
+    }
 
     addNewPlanet(data){
-        console.log('this.planetList :', this.planetList);
         return new Promise((resolve, reject) => {
 
             if (data['name']){
@@ -125,25 +115,34 @@ class PlanetHandler{
                     }
                 }
                 if(!exists){
-                    this.account.fetch(this.pathToList, {
-                        method: 'POST',
-                        headers: {
-                            'Content-type': 'text/turtle',
-                            'Link': '<http://www.w3.org/ns/ldp#Resource>; rel="type"',
-                            'Slug': this.planetFileName
-                        }
-                    })
-                    .then(res => res.headers)
-                    .then(h => {
-                        let relativeUri = h.get('Location');
-                        let uri = this.account.uri + relativeUri;
-                        let newPlanet = {};
-                        newPlanet[PLANET('name')] = data['name'];
-                        newPlanet['uri'] = uri;
-                        this.planetList[uri] = newPlanet;
-                        resolve(newPlanet);
-                    })
-                    .catch(err => reject(err));
+                    let decoded = this.decodeDataIntoTriples(data);
+                    if(decoded['triples'] && decoded['triples'] != ""){
+                        this.account.fetch(this.pathToList, {
+                            method: 'POST',
+                            headers: {
+                                'Content-type': 'text/turtle',
+                                'Link': '<http://www.w3.org/ns/ldp#Resource>; rel="type"',
+                                'Slug': this.planetFileName
+                            },
+                            body: decoded['triples']
+                        })
+                        .then(res => res.headers)
+                        .then(h => {
+                            let relativeUri = h.get('Location');
+                            let uri = this.account.uri + relativeUri;
+                            let newPlanet = {};
+                            for (const key in data) {
+                                if (data.hasOwnProperty(key)) {
+                                    newPlanet[PLANET(key)] = data[key];
+                                }
+                            }
+                            newPlanet['uri'] = uri;
+                            newPlanet['store'] = decoded['store'];
+                            this.planetList[uri] = newPlanet;
+                            resolve(newPlanet);
+                        })
+                        .catch(err => reject(err));
+                    }
                 }
             } else {
                 reject("No name given");
@@ -155,6 +154,20 @@ class PlanetHandler{
         return new Promise((resolve, reject) => {
             if (this.uriExists(uri)){
 
+            } else {
+                reject("Planet does not exists");
+            }
+        })
+    }
+
+    deletePlanet(uri){
+        return new Promise((resolve, reject) => {
+            if (this.uriExists(uri)){
+                this.account.fetch(uri, {
+                    method:'DELETE'
+                })
+                .then(res => resolve())
+                .catch(err => reject(err));
             } else {
                 reject("Planet does not exists");
             }

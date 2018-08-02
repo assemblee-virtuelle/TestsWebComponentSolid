@@ -49,12 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    connect = document.querySelector('connect-interface');
-    planetList = document.querySelector('planet-list');
+    connectInterface = document.querySelector('connect-interface');
+    planetInterface = document.querySelector('planet-interface');
 
     //#region Postal Channels Configuration
-    connect.setPostal(postal);
-    planetList.setPostal(postal);
+    connectInterface.setPostal(postal);
+    planetInterface.setPostal(postal);
 
     let register = postal.subscribe({
         channel:'auth',
@@ -76,7 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
         topic:'addNew',
         callback: (data, enveloppe) => {
             let test = [];
-            test['name'] = "toto";
+            test['name'] = "totto";
+            test['temperature'] = "Too hot";
+            test['radius'] = "Larger than my ex";
 
             PH.addNewPlanet(test)
             .then(res => {

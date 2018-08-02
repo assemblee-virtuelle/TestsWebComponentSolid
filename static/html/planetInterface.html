@@ -1,0 +1,56 @@
+<template id="tmpl-planetInterface">
+    <style>
+        .hidden {
+            display: none;
+        }
+        .shown {
+            display: inline;
+        }
+    </style>
+
+    <planet-list></planet-list>
+    <planet-form class="hidden"></planet-form>
+</template>
+<script>
+    const planetInterfaceTmpl = document.currentScript.ownerDocument.querySelector("#tmpl-planetInterface");
+    class PlanetInterface extends HTMLElement{
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = planetInterfaceTmpl.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.planetForm = this.shadowRoot.querySelector("planet-form");
+            this.planetList = this.shadowRoot.querySelector("planet-list");
+        }
+
+        connectedCallback(){
+
+        }
+
+        setPostal(postal){
+            this.postal = postal;
+            this.planetForm.setPostal(postal);
+            this.planetList.setPostal(postal);
+            setPostalChannels();
+        }
+
+        setPostalChannels(){
+            this.postal.subscribe({
+                channel:'planetInterface',
+                topic:'switchToForm',
+                callback: (data, enveloppe) => {
+                    planetList.className = "hidden";
+                    planetForm.className = "shown";
+                    if (data != null){
+
+                    }
+                }
+            })
+        }
+
+
+    }
+    window.customElements.define('planet-interface', PlanetInterface);
+</script>
