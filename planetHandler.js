@@ -116,11 +116,10 @@ class PlanetHandler{
 
             if (data['name']){
                 let exists = false;
-                for (const key in this.planetList) {
-                    if (this.planetList.hasOwnProperty(key) && this.planetList[key][PLANET('name')] == data['name']) {
-                        reject("Name already exists");
-                        exists = true;
-                    }
+
+                if (this.checkNameAvailability(data['name'])){
+                    reject("Name already exists");
+                    exists = true;
                 }
                 if(!exists){
                     let decoded = this.decodeDataIntoTriples(data);
@@ -139,11 +138,13 @@ class PlanetHandler{
                             let relativeUri = h.get('Location');
                             let uri = this.account.uri + relativeUri;
                             let newPlanet = {};
+                            let inputs = {};
                             for (const key in data) {
                                 if (data.hasOwnProperty(key)) {
-                                    newPlanet[PLANET(key)] = data[key];
+                                    inputs[PLANET(key)] = data[key];
                                 }
                             }
+                            newPlanet.inputs = inputs;
                             newPlanet['uri'] = uri;
                             newPlanet['store'] = decoded['store'];
                             this.planetList[uri] = newPlanet;
@@ -160,17 +161,43 @@ class PlanetHandler{
 
     editPlanet(data, uri){
         return new Promise((resolve, reject) => {
-            if (this.uriExists(uri)){
-                console.log("edit planet at ", uri);
+            let planet = this.uriExists(uri);
+            if (planet){
+                let exists = false;
+                if (this.checkNameAvailability(data['name'])){
+                    reject("Name already exists");
+                    console.log("name exists");
+                    exists = true;
+                }
+                if (!exists){
+                    console.log("edit planet");
+                    let decoded = this.decodeDataIntoTriples(data)
+                    this.account.fetch(uri, {
+                        method:'PUT',
+                        body: decoded['triples']
+                    })
+                    .then(res => resolve())
+                    .catch(err => reject(err))
+                }
             } else {
                 reject("Planet does not exists");
             }
         })
     }
 
+    checkNameAvailability(name){
+        for (const key in this.planetList) {
+            if (this.planetList.hasOwnProperty(key) && this.planetList[key]['inputs'][PLANET('name').value] == name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     deletePlanet(uri){
         return new Promise((resolve, reject) => {
-            if (this.uriExists(uri)){
+            let planet = this.uriExists(uri);
+            if (planet){
                 this.account.fetch(uri, {
                     method:'DELETE'
                 })
@@ -185,10 +212,10 @@ class PlanetHandler{
     uriExists(uri){
         for (const key in this.planetList) {
             if (this.planetList.hasOwnProperty(key) && uri == key) {
-                return false;
+                return this.planetList[key];
             }
         }
-        return true;
+        return null;
     }
 
     /**
@@ -233,13 +260,15 @@ class PlanetHandler{
 
     parsePlanetTriples(planet, uri){
         let ret = {};
+        let inputs = {};
         let store = $rdf.graph();
 
         $rdf.parse(planet, store, uri, 'text/turtle');
         let planetInfo = store.statementsMatching(PLANET('GeneralInfo'), undefined, undefined);
         for(let i = 0; i < planetInfo.length; i++){
-            ret[planetInfo[i].predicate.value] = planetInfo[i].object.value;
+            inputs[planetInfo[i].predicate.value] = planetInfo[i].object.value;
         }
+        ret.inputs = inputs;
         ret.store = store;
         ret.uri = uri;
         return ret;

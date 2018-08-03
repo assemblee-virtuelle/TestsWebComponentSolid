@@ -1,6 +1,6 @@
 <template id="planet-list">
     <style>
-        #tab{
+        table{
             width:90%;
             border:2px solid rgb(80, 80, 80);
             margin: 0 auto;
@@ -12,12 +12,9 @@
             margin-top:50px;
             margin-bottom:50px;
         }
-        .new {
-            background-color:greenyellow;
-        }
-        .actionTd{
+        .actionBlock{
             display:flex;
-            justify-content: space-around;
+            justify-content: space-evenly;
         }
         td{
             border:1px solid black;
@@ -29,9 +26,6 @@
             border-collapse:collapse;
             text-align:center;
         }
-        .actionTd > div {
-            cursor: pointer;
-        }
         #add > img{
             width:50px;
             height:50px;
@@ -42,11 +36,26 @@
             cursor: pointer;
             width:fit-content;
         }
+        .imgblock{
+            width:fit-content;
+            cursor: pointer;
+        }
     </style>
 
     <div id="list-block">
         <h1 class="title">Liste des planètes</h1>
-        <table id="tab">
+        <table>
+            <thead>
+                <tr id="tab_header">
+                    <th>Name</th>
+                    <th>Radius(km)</th>
+                    <th>Temperature(°C)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tab">
+
+            </tbody>
         </table>
         <div id="add">
             <img src="/images/plus.png" alt="add" />
@@ -79,24 +88,117 @@
             }
         }
 
-        onEditClick(e, postal){
-            if (postal){
-            }
-        }
-
-        onDeleteClick(e, postal){
-            if (postal){
-
-            }
-        }
-
         setPostal(){
             this.postal = postal;
             this.setPostalChannels();
         }
 
         generateList(list){
-            
+            this.table.innerHTML = "";
+            for(const key in list){
+                if (list.hasOwnProperty(key)){
+                    this.createLine(list[key]);
+                }
+            }
+        }
+
+        createLine(planetInfo){
+            let uri = planetInfo.uri;
+            let data = planetInfo.inputs;
+            let line = document.createElement("tr");
+
+            line.setAttribute("data-uri", uri);
+
+            //Creates tds define len
+            let tdLen = 4;
+
+            for(let i = 0; i < tdLen; i++){
+                let square = document.createElement("td");
+                line.appendChild(square);
+            }
+
+            //Define where the data is
+            for(const input in data){
+                if (data.hasOwnProperty(input)){
+                    switch(input){
+                        case 'http://example.org/planet#name':
+                        line.children[0].textContent = data[input];
+                        line.children[0].setAttribute("name", "name");
+                        break;
+                        case 'http://example.org/planet#radius':
+                        line.children[1].setAttribute("name", "radius");
+                        line.children[1].textContent = data[input];
+                        break;
+                        case 'http://example.org/planet#temperature':
+                        line.children[2].setAttribute("name", "temperature");
+                        line.children[2].textContent = data[input];
+                        break;
+                    }
+                }
+            }
+
+            line.childNodes[3].appendChild(this.createActionBlock());
+
+            this.table.appendChild(line);
+        }
+
+        createActionBlock(){
+            let block = document.createElement('div');
+            block.className = "actionBlock";
+            let editBlock = document.createElement('div');
+            let deleteBlock = document.createElement('div');
+
+            let editImg = document.createElement('img');
+            let deleteImg = document.createElement('img');
+
+            editImg.src = "/images/Edit.png";
+            editBlock.className = "imgblock edit_block";
+            editBlock.appendChild(editImg);
+            editBlock.addEventListener('click', e => {this.onEditClick(e)});
+
+            deleteImg.src = "/images/delete.png";
+            deleteBlock.className = "imgblock delete_block";
+            deleteBlock.appendChild(deleteImg);
+            deleteBlock.addEventListener('click', e => {this.onDeleteClick(e)});
+
+            block.appendChild(editBlock);
+            block.appendChild(deleteBlock);
+            return block;
+        }
+
+        onEditClick(e){
+            if (this.postal){
+                let line = e.target.closest("tr");
+                let inputs = {};
+                let uri = line.getAttribute('data-uri');
+                let tdlist = line.querySelectorAll("td[name]");
+                let ret = {};
+
+                for(let i = 0; i < tdlist.length; i++){
+                    inputs[tdlist[i].getAttribute('name')] = tdlist[i].textContent;
+                }
+                ret.inputs = inputs;
+                ret.uri = uri;
+
+                this.postal.publish({
+                    channel:'planetInterface',
+                    topic:'switchToForm',
+                    data:ret
+                })
+            }
+        }
+
+        onDeleteClick(e){
+            if (this.postal){
+                let line = e.target.closest("tr");
+                let uri = line.getAttribute('data-uri');
+
+                this.postal.publish({
+                    channel:'planet',
+                    topic:'delete',
+                    data: uri
+                })
+            }
         }
 
         setPostalChannels(){

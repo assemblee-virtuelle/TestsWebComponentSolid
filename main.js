@@ -38,8 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(val){
             webid = accountManager.authWebid;
             if (webid && webid != ""){
-                console.log('accountManager :', accountManager);
-                
                 PH.reloadListPath();
                 loadList();
                 publishLoggedStatus(true);
@@ -91,10 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
         channel:'planet',
         topic:'editConfirm',
         callback: (data, enveloppe) => {
-            console.log("edit confirm");
             PH.editPlanet(data['form'], data['uri'])
             .then(res => {
-                console.log("edited :", res);
+                loadList();
+                switchToList();
             })
             .catch(err => console.log('err editing :', err))
         }
@@ -104,7 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
         topic:'delete',
         callback: (data, enveloppe) => {
             PH.deletePlanet(data).then(res => {
-                PH.loadPlanetList();
+                loadList();
+                switchToList();
             })
         }
     });
@@ -114,8 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         callback: (data, enveloppe) => {
             PH.addNewPlanet(data)
             .then(res => {
-
-                console.log('planet addded :', res);
                 loadList();
                 switchToList();
             })
@@ -162,8 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadList(){
         PH.loadPlanetList().then(list => {
-            console.log('list :', list);
-
             planetInterface.generateList(list);
         })
         

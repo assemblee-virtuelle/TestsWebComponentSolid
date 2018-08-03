@@ -80,21 +80,25 @@
                     if (dataForm[i].value && dataForm[i].value != "")
                     ret[dataForm[i].name] = dataForm[i].value;
                 }
-                if (!uri || uri == "" && !this.isEmpty(ret)){
-                    this.postal.publish({
-                        channel:'planet',
-                        topic:'addNewConfirm',
-                        data:ret
-                    })
+                if (ret['name'] && ret['name'] != ""){
+                    if (!uri || uri == "" && !this.isEmpty(ret)){
+                        this.postal.publish({
+                            channel:'planet',
+                            topic:'addNewConfirm',
+                            data:ret
+                        })
+                    } else {
+                        let _data = {};
+                        _data['form'] = ret;
+                        _data['uri'] = uri;
+                        this.postal.publish({
+                            channel:'planet',
+                            topic:'editConfirm',
+                            data:_data
+                        })
+                    }
                 } else {
-                    let _data = {};
-                    _data['form'] = ret;
-                    _data['uri'] = uri;
-                    this.postal.publish({
-                        channel:'planet',
-                        topic:'editConfirm',
-                        data:_data
-                    })
+                    console.log("retry with a name");
                 }
             }
 
@@ -124,19 +128,10 @@
 
             setFormData(fields, uri){
                 if (uri){
+                    this.resetFormData();
                     for(const fieldName in fields){
                         if (fields.hasOwnProperty(fieldName)){
-                            switch(fieldName){ //TODO: Transform into non switch method
-                                case 'http://example.org/planet#name':
-                                this.inputList['name'].value = fields[fieldName];
-                                break;
-                                case 'http://example.org/planet#radius':
-                                this.inputList['radius'].value = fields[fieldName];
-                                break;
-                                case 'http://example.org/planet#temperature':
-                                this.inputList['temperature'].value = fields[fieldName];
-                                break;
-                            }
+                            this.inputList[fieldName].value = fields[fieldName];
                         }
                     }
                     this.shadowRoot.querySelector('input[name="uri"]').value = uri;
