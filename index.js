@@ -17,16 +17,6 @@ app.get('/', (req,res) => {
     res.sendFile('static/index.html');
 });
 
-// app.get('/postal', (req, res) => {
-//     console.log('res.header :', res.getHeader(''));
-// })
+let port = 8000;
 
-server.listen(8000, ()=> console.log("launched on https://localhost:8000"));
-
-// let getResource = postal.subscribe({
-//     channel:'solid',
-//     topic:'get-resource',
-//     callback:(data, enveloppe) => {
-//         console.log("nice");
-//     }
-// });
+server.listen(port, ()=> console.log(`Launched on https://localhost:${port}/`));

@@ -12,7 +12,8 @@ var connect;
 var fetch = window.fetch;
 window.postal = postal;
 
-const solidUri = "https://localhost:8443/";
+const solidPort = 8443;
+const solidUri = `https://localhost:${solidPort}/`;
 let webid = "";
 let registerEndpoint = "api/accounts/new";
 
@@ -31,8 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     var PH = new PlanetHandler(options);
 
-
-
     accountManager.checkConnect()
     .then(val => {
         if(val){
@@ -49,8 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-    
     connectInterface = document.querySelector('connect-interface');
     planetInterface = document.querySelector('planet-interface');
 
