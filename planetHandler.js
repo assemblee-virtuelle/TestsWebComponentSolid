@@ -26,6 +26,7 @@ class PlanetHandler{
         this.planetList = {};
     }
 
+    //Load the planet List from distant turtle file and parses it into an array
     loadPlanetList(){
         return new Promise((resolve, reject) => {
             this.fetchPlanetList()
@@ -76,6 +77,7 @@ class PlanetHandler{
         })
     }
 
+    //Creates the planet List
     createPlanetList(){
         return new Promise((resolve, reject) => {
             this.account.fetch(this.account.uri, {
@@ -87,7 +89,8 @@ class PlanetHandler{
                 }
             })
             .then(res => {
-                console.log('Planet list created !');
+                
+                //console.log('Planet list created !');
                 resolve();
             })
             .catch(err => {
@@ -97,6 +100,7 @@ class PlanetHandler{
         });
     }
 
+    //decode data from form to rdf triples
     decodeDataIntoTriples(data){
         let ret = {};
         let triples = null;
@@ -113,6 +117,7 @@ class PlanetHandler{
         return ret;
     }
 
+    //Add a new planet to the list
     addNewPlanet(data){
         return new Promise((resolve, reject) => {
 
@@ -161,6 +166,7 @@ class PlanetHandler{
         });
     }
 
+    //edit a planet
     editPlanet(data, uri){
         return new Promise((resolve, reject) => {
             let planet = this.uriExists(uri);
@@ -179,6 +185,7 @@ class PlanetHandler{
         })
     }
 
+    //Check if the planet name is taken or not
     checkNameAvailability(name){
         for (const key in this.planetList) {
             if (this.planetList.hasOwnProperty(key) && this.planetList[key]['inputs'][PLANET('name').value] == name) {
@@ -188,6 +195,7 @@ class PlanetHandler{
         return false;
     }
 
+    //Deletes a planet from the list
     deletePlanet(uri){
         return new Promise((resolve, reject) => {
             let planet = this.uriExists(uri);
@@ -203,6 +211,7 @@ class PlanetHandler{
         })
     }
 
+    //Check if the uri is taken or not
     uriExists(uri){
         for (const key in this.planetList) {
             if (this.planetList.hasOwnProperty(key) && uri == key) {
@@ -214,7 +223,7 @@ class PlanetHandler{
 
     /**
      * @description "Get the uris of the turtle resources into the container"
-     * @param list "Liste in turtle triples"
+     * @param list "List in turtle triples"
      */
     getTurtlesFiles(list){
         this.store = $rdf.graph();
@@ -232,6 +241,7 @@ class PlanetHandler{
         return tab;
     }
 
+    //Fetches a planet from its uri
     fetchPlanet(uri){
         return new Promise((resolve, reject) => {
             this.account.fetch(uri, {
@@ -252,6 +262,7 @@ class PlanetHandler{
         })
     }
 
+    //Parse rdf triples into an array
     parsePlanetTriples(planet, uri){
         let ret = {};
         let inputs = {};
@@ -268,6 +279,7 @@ class PlanetHandler{
         return ret;
     }
 
+    //Fetches the planet list 
     fetchPlanetList(){
         return new Promise((resolve, reject) => {
             this.hasPlanetList().then(res => {
@@ -292,6 +304,7 @@ class PlanetHandler{
         });
     }
 
+    //Change uri from https://localhost:port to https://user.localhost:port and conversely
     reloadListPath(){ //TODO: Faire une method qui se trigger lors de la co/deco dans accountmanager
         this.pathToList = this.account.uri + this.planetListName + '/';
     }

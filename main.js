@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uri: solidUri,
         registerEndpoint: registerEndpoint
     };
+    //Create an instance of the AccountManager with given options
     var accountManager = new AccountManager(accOptions);
     let options = {
         account: accountManager,
@@ -26,11 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
         planetListName: 'PlanetList',
         planetFileName: 'Planet'
     }
+    //Creates the planet handler
     var PH = new PlanetHandler(options);
 
+    //Check if the user is connected or not
     accountManager.checkConnect().then(res => {
         webid = accountManager.authWebid;
         if (webid && webid != ""){
+            //If the user is connected and has a webid, reload the path and load the planet list
             PH.reloadListPath();
             loadList();
             publishLoggedStatus(true);
@@ -42,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         publishLoggedStatus(false);
     })
 
+    //Get the webcomponents in order to call setPostal() method
     connectInterface = document.querySelector('connect-interface');
     planetInterface = document.querySelector('planet-interface');
 
@@ -58,10 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
         channel: 'auth',
         topic: 'login',
         callback: (data) => {
-            if (data == 1){
-                accountManager.providerUri = "https://localhost:8443/";
-            } else {
+            if (data == 2){
                 accountManager.providerUri = "https://localhost:8444/";
+            } else {
+                accountManager.providerUri = "https://localhost:8443/";
             }
             accountManager.login();
         }

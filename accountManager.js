@@ -14,6 +14,7 @@ class AccountManager{
         this.webid = null;
     }
 
+    //Check if the user is connected to the solid server
     checkConnect(){
         return new Promise((resolve, reject) => {
             auth.trackSession(session => {
@@ -35,6 +36,7 @@ class AccountManager{
         })
     }
 
+    //Register function TODO: change this
     register(){
         if (!this.registerUri){
             throw new Error("Register Endpoint not set");
@@ -55,6 +57,7 @@ class AccountManager{
         .catch(err => console.log('register err :', err));
     }
 
+    //Login function using solid-auth-client
     login(){
         async function loginToSolid(idp) {
             const session = await auth.currentSession();
