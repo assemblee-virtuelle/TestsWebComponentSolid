@@ -1,5 +1,7 @@
 const extend = require('extend');
 const OIDC = require('@trust/oidc-web');
+const auth = require('solid-auth-client');
+const { fetch } = auth;
 
 class AccountManager{
     constructor(args = {}){
@@ -8,44 +10,36 @@ class AccountManager{
         if (!this.uri || this.uri == ""){
             throw new Error("Account Uri not set");
         }
-
-        var OIDCWebClient = OIDC.OIDCWebClient;
-        var options = { solid: true };
-        this.auth = new OIDCWebClient(options);
-
-        this.fetch = null;
+        this.defaultUri = this.uri;
         this.webid = null;
     }
 
     checkConnect(){
         return new Promise((resolve, reject) => {
-            this.auth.currentSession()
-            .then(session => {
-                console.log('session: ', session);
-                if (!session.hasCredentials()){
-                    this.fetch = window.fetch;
-                    this.uri = solidUri;
-                    this.webid = null;
-                } else{
+            auth.trackSession(session => {
+                if (!session){
+                    console.log("Not logged in");
+                    reject();
+                } else {
+                    this.webid = session.webId;
                     let regexp = /(.*)(profile.*)/g;
-                    this.webid = session.idClaims.sub;
+                    this.fetch = auth.fetch;
                     let match = regexp.exec(this.webid);
-                    if(match[1] != null && match[1] != undefined){
-                        this.fetch = session.fetch;
+                    if (match[1] != null && match[1] != undefined){
                         this.uri = match[1];
-                        resolve(true);
+                        console.log('this.uri :', this.uri);
+                        resolve();
                     }
                 }
-                resolve(false)
             });
-        });
+        })
     }
 
     register(){
         if (!this.registerUri){
             throw new Error("Register Endpoint not set");
         }
-        this.fetch(this.uri + this.registerUri, {
+        fetch(this.uri + this.registerUri, {
             method:'POST',
             headers:{
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -62,18 +56,19 @@ class AccountManager{
     }
 
     login(){
-        this.auth.currentSession()
-        .then(session => {
-            if (!session.hasCredentials()) {
-                this.auth.login(this.uri);
-            } else {
-                console.log('Already connected');
-            } 
-        });
+        async function loginToSolid(idp) {
+            const session = await auth.currentSession();
+            if (!session)
+                await auth.login(idp);
+            else
+                console.log('Logged in as ', session.webId);
+        }
+        loginToSolid(this.uri);
     }
 
     logout(){
-        this.auth.logout();
+        auth.logout();
+        console.log("Logout");
     }
 
     //#region Getters and Setters

@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const https = require('https');
-const postal = require('postal');
 
 var privateKey  = fs.readFileSync('../localhost.key', 'utf8');
 var certificate = fs.readFileSync('../localhost.cert', 'utf8');
@@ -14,7 +13,7 @@ let credentials = {key: privateKey, cert: certificate};
 const server = https.createServer(credentials, app);
 
 app.get('/', (req,res) => {
-    res.sendFile('static/index.html');
+    res.sendFile('static/index.html', {root : __dirname});
 });
 
 let port = 8000;

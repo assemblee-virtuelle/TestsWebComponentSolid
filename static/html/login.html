@@ -25,10 +25,14 @@
     </style>
     <div id="connect">
         <div id="choose">Login with :</div>
-        <div id="solid" class="issuer">
+        <div id="solidOne" class="issuer">
             <img src="images/solid-logo.png" alt="Solid Logo" />
-            <b>Solid</b>
+            <b>Solid (one)</b>
         </div> 
+        <div id="solidTwo" class="issuer">
+            <img src="images/solid-logo.png" alt="Solid logo">
+            <b>Solid (two)</b>
+        </div>
     </div>
 </template>
 <script>
@@ -44,19 +48,31 @@
         }
 
         connectedCallback(){
-            this.shadowRoot.getElementById("solid").addEventListener('click', e => {
-                e.preventDefault();
-                this.login();
-            })
+            let issuerList = this.shadowRoot.querySelectorAll('.issuer');
+            for (let i = 0; i < issuerList.length; i++){
+                issuerList[i].addEventListener('click', e => {
+                    e.preventDefault();
+                    this.login(issuerList[i].id);
+                })
+            }
         }
 
-        login(){
+        login(id){
             if (this.postal){
-                this.postal.publish({
-                    channel:'auth',
-                    topic:'login',
-                    data:'ok'
-                });
+                let server = 0;
+                if (id == 'solidOne')
+                {
+                    console.log("logged on first serv");
+                    server = 1;
+                } else {
+                    console.log("logged on server two");
+                    server = 2;
+                }
+                    this.postal.publish({
+                        channel:'auth',
+                        topic:'login',
+                        data:server
+                    });
             }
         }
 

@@ -19,6 +19,7 @@ class PlanetHandler{
         if (!this.planetListName || !this.planetFileName){
             throw new Error("Missing planet list info");
         }
+
         this.pathToList = this.account.uri + this.planetListName + '/';
         this.store = $rdf.graph();
         this.planetCount = 0;
@@ -54,10 +55,12 @@ class PlanetHandler{
      */
     hasPlanetList(){
         return new Promise((resolve, reject) => {
+            console.log('this.pathToList :', this.pathToList);
             this.account.fetch(this.pathToList, {
                 method:'HEAD'
             })
             .then(res => {
+                console.log('res :', res);
                 return res.status;
             })
             .then(status => {
@@ -70,7 +73,6 @@ class PlanetHandler{
             .catch(err => {
                 reject(err);
             })
-
         })
     }
 
@@ -163,22 +165,14 @@ class PlanetHandler{
         return new Promise((resolve, reject) => {
             let planet = this.uriExists(uri);
             if (planet){
-                let exists = false;
-                if (this.checkNameAvailability(data['name'])){
-                    reject("Name already exists");
-                    console.log("name exists");
-                    exists = true;
-                }
-                if (!exists){
-                    console.log("edit planet");
-                    let decoded = this.decodeDataIntoTriples(data)
-                    this.account.fetch(uri, {
-                        method:'PUT',
-                        body: decoded['triples']
-                    })
-                    .then(res => resolve())
-                    .catch(err => reject(err))
-                }
+                console.log("edit planet");
+                let decoded = this.decodeDataIntoTriples(data)
+                this.account.fetch(uri, {
+                    method:'PUT',
+                    body: decoded['triples']
+                })
+                .then(res => resolve())
+                .catch(err => reject(err))
             } else {
                 reject("Planet does not exists");
             }
@@ -298,7 +292,7 @@ class PlanetHandler{
         });
     }
 
-    reloadListPath(){ //TODO Faire une method qui se trigger lors de la co/deco dans accountmanager
+    reloadListPath(){ //TODO: Faire une method qui se trigger lors de la co/deco dans accountmanager
         this.pathToList = this.account.uri + this.planetListName + '/';
     }
 

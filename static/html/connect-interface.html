@@ -111,11 +111,11 @@
         }
 
         triggerConnect(data, enveloppe){
-            if(data['connected'] && data['connected'] == true){
+            if(data && data['connected']){
                 this.logReg.className = "hide";
                 this.hello.className = "show";
                 this.shadowRoot.getElementById("webid").innerHTML = data['webid'];
-            } else{
+            } else {
                 this.logReg.className = "";
                 this.logReg.style.display = "flex !important";
                 this.hello.className = "hide";

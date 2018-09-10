@@ -6,10 +6,6 @@ const AccountManager = require('./accountManager');
 /*
 ** Initialise postal dans les classes des webcomponent
 */
-
-var connect;
-
-var fetch = window.fetch;
 window.postal = postal;
 
 const solidPort = 8443;
@@ -32,21 +28,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     var PH = new PlanetHandler(options);
 
-    accountManager.checkConnect()
-    .then(val => {
-        if(val){
-            webid = accountManager.authWebid;
-            if (webid && webid != ""){
-                PH.reloadListPath();
-                loadList();
-                publishLoggedStatus(true);
-            }
-        } else {
-            webid = null;
+    accountManager.checkConnect().then(res => {
+        webid = accountManager.authWebid;
+        if (webid && webid != ""){
             PH.reloadListPath();
-            publishLoggedStatus(false);
+            loadList();
+            publishLoggedStatus(true);
         }
-    });
+    })
+    .catch(err => {
+        webid = null;
+        PH.reloadListPath();
+        publishLoggedStatus(false);
+    })
 
     connectInterface = document.querySelector('connect-interface');
     planetInterface = document.querySelector('planet-interface');
@@ -54,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //#region Postal Channels Configuration
     connectInterface.setPostal(postal);
     planetInterface.setPostal(postal);
-
 
     let register = postal.subscribe({
         channel:'auth',
@@ -64,12 +57,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let login = postal.subscribe({
         channel: 'auth',
         topic: 'login',
-        callback: accountManager.login.bind(accountManager)
+        callback: (data) => {
+            if (data == 1){
+                accountManager.providerUri = "https://localhost:8443/";
+            } else {
+                accountManager.providerUri = "https://localhost:8444/";
+            }
+            accountManager.login();
+        }
     });
     let logout = postal.subscribe({
         channel:'auth',
         topic:'logout',
-        callback: accountManager.logout.bind(accountManager)
+        callback: () => {
+            accountManager.logout();
+            connectInterface.triggerConnect();
+        }
     });
     postal.subscribe({
         channel:'planet',
