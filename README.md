@@ -7,3 +7,5 @@ To compile assets : `npm install` then use the `webpack` command, or `./nodes_mo
 
 Launch the solid server on the server.js file `node server.js` or your own solid server 
 Then launch the second server with the command `node index.js` 
+
+Better use it on chrome, it doesn't work properly on firefox (fix in progress)
