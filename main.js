@@ -2,6 +2,7 @@ const postal = require('postal');
 const PlanetHandler = require('./planetHandler');
 const AccountManager = require('./accountManager');
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 /*
 ** Initialise postal dans les classes des webcomponent
@@ -31,20 +32,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var PH = new PlanetHandler(options);
 
     //Check if the user is connected or not
-    accountManager.checkConnect().then(res => {
-        webid = accountManager.authWebid;
+    accountManager.checkConnect(_webID => {
+        webid = _webID;
         if (webid && webid != ""){
-            //If the user is connected and has a webid, reload the path and load the planet list
+            //If the user is connected and has a webID, reload the path and load the planet list
             PH.reloadListPath();
             loadList();
             publishLoggedStatus(true);
+        } else {
+            PH.reloadListPath();
+            publishLoggedStatus(false);
         }
-    })
-    .catch(err => {
-        webid = null;
-        PH.reloadListPath();
-        publishLoggedStatus(false);
-    })
+    });
 
     //Get the webcomponents in order to call setPostal() method
     connectInterface = document.querySelector('connect-interface');
@@ -63,11 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         channel: 'auth',
         topic: 'login',
         callback: (data) => {
-            if (data == 2){
-                accountManager.providerUri = "https://localhost:8444/";
-            } else {
-                accountManager.providerUri = "https://localhost:8443/";
-            }
+            accountManager.providerUri = "https://localhost:8443/";
             accountManager.login();
         }
     });

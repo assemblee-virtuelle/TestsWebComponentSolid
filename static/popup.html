@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #serverList{
+            display:flex;
+            flex-wrap: wrap;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .server{
+            text-align:center;
+        }
+        .server > img {
+            width:100px;
+        }
+        #serverOne:hover{
+            border: 2px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div id="body">
+        <div id="serverList">
+            <div id="serverOne" class="server">
+                <img src="/images/solid-logo.png" alt="">
+                <p>Server One</p>
+            </div>
+            <div id="serverTwo" class="server">
+                <img src="/images/solid-logo.png" alt="">
+                <p>Server Two</p>
+            </div>
+            <div id="serverThree" class="server">
+                <img src="/images/solid-logo.png" alt="">
+                <p>Server Three</p>
+            </div>
+            <div id="serverFour" class="server">
+                <img src="/images/solid-logo.png" alt="">
+                <p>Server Four</p>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        let solidOne = document.getElementById("serverOne");
+        solidOne.addEventListener("click", (e) => {
+            console.log("solid ne");
+        })
+    </script>
+</body>
+</html>

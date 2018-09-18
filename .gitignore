@@ -2,7 +2,7 @@ node_modules
 config
 .db
 *localhost
-LDP
+LDP*
 static/runtime.*
 static/vendors.*
 static/compiledJs

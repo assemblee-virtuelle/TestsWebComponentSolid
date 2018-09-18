@@ -46,7 +46,6 @@ class PlanetHandler{
             })
             .catch(err => {
                 reject(err);
-                console.log('errfetch :', err);
             })
         })
     }
@@ -61,7 +60,6 @@ class PlanetHandler{
                 method:'HEAD'
             })
             .then(res => {
-                console.log('res :', res);
                 return res.status;
             })
             .then(status => {
@@ -283,7 +281,7 @@ class PlanetHandler{
     fetchPlanetList(){
         return new Promise((resolve, reject) => {
             this.hasPlanetList().then(res => {
-                this.account.fetch(this.pathToList, {
+                this.account.fetch('https://savincen.localhost:8443/PlanetList', {
                     method: 'GET',
                     headers: {'Content-type':'text/turtle'}
                 })
@@ -293,7 +291,6 @@ class PlanetHandler{
                     resolve(planetList);
                 })
                 .catch(err => {
-                    console.log('err fetching list :', err);
                     reject(err);
                 })
             })
@@ -306,7 +303,7 @@ class PlanetHandler{
 
     //Change uri from https://localhost:port to https://user.localhost:port and conversely
     reloadListPath(){ //TODO: Faire une method qui se trigger lors de la co/deco dans accountmanager
-        this.pathToList = this.account.uri + this.planetListName + '/';
+        this.pathToList = 'https://savincen.localhost:8443/PlanetList/';
     }
 
     set listPath(pathToList){

@@ -59,19 +59,10 @@
 
         login(id){
             if (this.postal){
-                let server = 0;
-                if (id == 'solidTwo')
-                {
-                    console.log("logged on Second serv");
-                    server = 2;
-                } else {
-                    console.log("logged on First serv");
-                    server = 1;
-                }
                 this.postal.publish({
                     channel:'auth',
                     topic:'login',
-                    data:server
+                    data:null
                 });
             }
         }

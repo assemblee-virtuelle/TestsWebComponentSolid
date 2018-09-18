@@ -8,13 +8,20 @@ var certificate = fs.readFileSync('../localhost.cert', 'utf8');
 app.use(express.static(__dirname + '/views'));
 app.use(express.static(__dirname + '/static'));
 
-let credentials = {key: privateKey, cert: certificate};
+let router = express.Router();
 
-const server = https.createServer(credentials, app);
+let credentials = {key: privateKey, cert: certificate};
 
 app.get('/', (req,res) => {
     res.sendFile('static/index.html', {root : __dirname});
 });
+
+app.get('/popup', (req, res) => {
+    console.log('req.query.idToken :', req.query.idToken);
+    res.sendFile('static/popup.html', {root : __dirname});
+});
+
+const server = https.createServer(credentials, app);
 
 let port = 8000;
 

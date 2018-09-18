@@ -15,25 +15,22 @@ class AccountManager{
     }
 
     //Check if the user is connected to the solid server
-    checkConnect(){
-        return new Promise((resolve, reject) => {
-            auth.trackSession(session => {
-                if (!session){
-                    console.log("Not logged in");
-                    reject();
-                } else {
-                    this.webid = session.webId;
-                    let regexp = /(.*)(profile.*)/g;
-                    this.fetch = auth.fetch;
-                    let match = regexp.exec(this.webid);
-                    if (match[1] != null && match[1] != undefined){
-                        this.uri = match[1];
-                        console.log('this.uri :', this.uri);
-                        resolve();
-                    }
+    checkConnect(callback){
+        auth.trackSession(session => {
+            if (!session){
+                console.log("Not logged in");
+                callback(null);
+            } else {
+                this.webid = session.webId;
+                let regexp = /(.*)(profile.*)/g;
+                this.fetch = auth.fetch;
+                let match = regexp.exec(this.webid);
+                if (match[1] != null && match[1] != undefined){
+                    this.uri = match[1];
+                    callback(match[1]);
                 }
-            });
-        })
+            }
+        });
     }
 
     //Register function TODO: change this
@@ -62,7 +59,7 @@ class AccountManager{
         async function loginToSolid(idp) {
             const session = await auth.currentSession();
             if (!session)
-                await auth.login(idp);
+                await auth.popupLogin({popupUri: 'https://localhost:8000/popup'});
             else
                 console.log('Logged in as ', session.webId);
         }
