@@ -1,11 +1,12 @@
 const extend = require('extend');
 const $rdf = require('rdflib');
-const isEmpty = require('./utils');
+const utils = require('./utils');
 
 var RDF = $rdf.Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 var PLANET = $rdf.Namespace('http://example.org/planet#');
 var FOAF = $rdf.Namespace('http://xmlns.com/foaf/0.1/');
 var TURTLE = $rdf.Namespace('http://www.w3.org/ns/iana/media-types/text/turtle#');
+var ACL = $rdf.Namespace('http://www.w3.org/ns/auth/acl#');
 class PlanetHandler{
     constructor(args = {}){
         extend(this, args);
@@ -41,6 +42,7 @@ class PlanetHandler{
                     for(let i = 0; i < list.length; i++){
                         this.planetList[list[i].uri] = list[i];
                     }
+                    console.log('this.planetList :', this.planetList);
                     resolve(this.planetList);
                 });
             })
@@ -98,7 +100,7 @@ class PlanetHandler{
         });
     }
 
-    //decode data from form to rdf triples
+    //decode data form to rdf triples in order to do a PUT
     decodeDataIntoTriples(data){
         let ret = {};
         let triples = null;
@@ -118,10 +120,8 @@ class PlanetHandler{
     //Add a new planet to the list
     addNewPlanet(data){
         return new Promise((resolve, reject) => {
-
             if (data['name']){
                 let exists = false;
-
                 if (this.checkNameAvailability(data['name'])){
                     reject("Name already exists");
                     exists = true;
@@ -228,7 +228,7 @@ class PlanetHandler{
         let i = 0;
 
         $rdf.parse(list, this.store, this.pathToList, 'text/turtle');
-        let uris = this.store.statementsMatching(undefined, RDF('type'), TURTLE('Resource'));
+        let uris = this.store.statementsMatching(undefined, RDF('type'), TURTLE('Resource')); 
         let tab = [];
 
         while(i < uris.length){
@@ -242,15 +242,26 @@ class PlanetHandler{
     //Fetches a planet from its uri
     fetchPlanet(uri){
         return new Promise((resolve, reject) => {
+            let link = '';
+            let status = 0;
             this.account.fetch(uri, {
                 method: 'GET',
                 headers: {'Content-type': 'text/turtle'}
             })
-            .then(res => res.text())
+            .then(res => {
+                link = utils.parseLinkHeader(res.headers.get('Link'));
+                status = res.status;
+                return res.text();
+            })
             .then(rawPlanet => {
-                if (rawPlanet && rawPlanet != ""){
+                if (rawPlanet && rawPlanet != "" && status == 200){
+                    let planetAcl = link.acl;
                     let planet = this.parsePlanetTriples(rawPlanet, uri);
+                    planet.acl = planetAcl;
                     resolve(planet);
+                } else if (status == 403 || status == 401){
+                    console.log("Unauthorised or access denied");
+                    reject("Unauthorised or access denied");
                 } else {
                     console.log("planet empty");
                     reject("Planet is empty");
@@ -276,6 +287,83 @@ class PlanetHandler{
         ret.uri = uri;
         return ret;
     }
+
+    parsePlanetAcl(triples, uri){
+        let store = $rdf.graph();
+        let ret = {};
+
+        $rdf.parse(triples, store, uri, 'text/turtle');
+
+        let webids = store.statementsMatching(undefined, ACL('agent'), undefined);
+        if (webids != null){
+            let key = "";
+            let tab = [];
+            for(let i = 0; i < webids.length; i++){
+                if (webids[i].subject.value != key)
+                    tab = [];
+                tab.push(webids[i].object.value);
+                key = webids[i].subject.value;
+                ret[key] = tab;
+            }
+            for (const group in ret) {
+                if (ret.hasOwnProperty(group)) {
+                    let permissions = store.each($rdf.sym(group), ACL('mode'));
+                    if (permissions != null){
+                        ret[group]['permissions'] = [];
+                        for(let j = 0; j < permissions.length; j++){
+                            ret[group]['permissions'].push(permissions[j].value);
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+
+    aclExist(acl){
+        return new Promise((res, rej) => {
+            this.account.fetch(acl, {
+                method:'HEAD'
+            })
+            .then(res => res.status)
+            .then(status => {
+                if(status != 200){
+                    rej('no acl');
+                } else {
+                    res();
+                }
+            })
+            .catch(err => rej(err))
+        })
+    }
+
+    fetchPermissions(data, callback){
+        let uri = data.uri;
+        let aclUri = this.pathToList + data.acl;
+        this.aclExist(aclUri)
+        .then(res => {
+            this.account.fetch(aclUri, {
+                method:'GET',
+                headers:{'Content-Type':'text/turtle'}
+            })
+            .then(res => res.text())
+            .then(triples => {
+                let parsed = this.parsePlanetAcl(triples, aclUri);
+                console.log('parsed :', parsed);
+                this.planetList[uri].hasAcl = true;
+
+                callback(parsed);
+            })
+        })
+        .catch(err => {
+            if (err == 'no acl'){
+                //this.planetList[uri].hasAcl = false;
+            }
+            this.planetList[uri].hasAcl = false;
+            callback();
+        })
+
+    }   
 
     //Fetches the planet list 
     fetchPlanetList(){
@@ -303,15 +391,11 @@ class PlanetHandler{
 
     //Change uri from https://localhost:port to https://user.localhost:port and conversely
     reloadListPath(){ //TODO: Faire une method qui se trigger lors de la co/deco dans accountmanager
-        this.pathToList = 'https://savincen.localhost:8443/PlanetList/';
+        this.pathToList =  this.account.uri + this.planetListName + '/';
     }
 
-    set listPath(pathToList){
-        this.pathToList = pathToList;
-    }
-
-    get listPath(){
-        return this.pathToList;
+    listPath(accountUri){
+        this.pathToList = accountUri + this.planetListName + '/';
     }
 
 }

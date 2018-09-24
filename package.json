@@ -26,6 +26,7 @@
     "https": "^1.0.0",
     "n3": "^1.0.0-beta.2",
     "oidc-web": "^0.2.1",
+    "parse-link-header": "^1.0.1",
     "postal": "^2.0.5",
     "rdflib": "^0.17.1",
     "solid-auth-client": "^2.2.3"

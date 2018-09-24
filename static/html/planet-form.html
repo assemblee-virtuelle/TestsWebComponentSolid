@@ -52,6 +52,9 @@
                 </div>
             </form>
         </div>
+
+        <h1>Permissions</h1>
+        <planet-permissions></planet-permissions>
     </template>
     <script>
         let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');;
@@ -66,6 +69,7 @@
                 this.planetForm = this.shadowRoot.getElementById("planetForm");
                 this.cancelBtn = this.shadowRoot.getElementById("cancel");
                 this.submitBtn = this.shadowRoot.getElementById("btn_submit");
+                this.permissions = this.shadowRoot.querySelector('planet-permissions');
             }
     
             connectedCallback(){
@@ -136,18 +140,21 @@
             }
 
             setPostal(postal){
+                this.permissions.setPostal(postal);
                 this.postal = postal;
             }
 
-            setFormData(fields, uri){
-                if (uri){
+            setFormData(data){
+                if (data.uri){
                     this.resetFormData();
-                    for(const fieldName in fields){
-                        if (fields.hasOwnProperty(fieldName)){
-                            this.inputList[fieldName].value = fields[fieldName];
+                    this.permissions.setAttribute('data-uri', data.uri);
+                    this.permissions.setAttribute('data-acl', data.acl); //Note: Take care of the call order because of attributeChangedCallback on planet-permissions.html
+                    for(const fieldName in data.inputs){
+                        if (data.inputs.hasOwnProperty(fieldName)){
+                            this.inputList[fieldName].value = data.inputs[fieldName];
                         }
                     }
-                    this.shadowRoot.querySelector('input[name="uri"]').value = uri;
+                    this.shadowRoot.querySelector('input[name="uri"]').value = data.uri;
                 } else {
                     console.log("no uri set");
                 }

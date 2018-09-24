@@ -1,8 +1,11 @@
 const extend = require('extend');
+const $rdf = require('rdflib');
 const OIDC = require('@trust/oidc-web');
 const auth = require('solid-auth-client');
 const { fetch } = auth;
 
+var SOLID = $rdf.Namespace('http://www.w3.org/ns/solid/terms#');
+var PIM = $rdf.Namespace('http://www.w3.org/ns/pim/space#');
 class AccountManager{
     constructor(args = {}){
         extend(this, args);
@@ -22,15 +25,32 @@ class AccountManager{
                 callback(null);
             } else {
                 this.webid = session.webId;
-                let regexp = /(.*)(profile.*)/g;
                 this.fetch = auth.fetch;
-                let match = regexp.exec(this.webid);
-                if (match[1] != null && match[1] != undefined){
-                    this.uri = match[1];
-                    callback(match[1]);
-                }
+                this.getAccountAndStorage(this.webid, data => {
+                    callback(data.account);
+                });
             }
         });
+    }
+
+    getAccountAndStorage(webid, callback){
+        this.fetch(webid, {
+            method:'GET',
+            headers: {'Content-type': 'text/turtle'}
+        })
+        .then(res => res.text())
+        .then(card => {
+            let store = $rdf.graph();
+
+            $rdf.parse(card, store, webid, 'text/turtle');
+            let accountStatements = store.statementsMatching($rdf.sym(webid), SOLID('account'), undefined); //TODO: replacer par each()
+            let storageStatements = store.statementsMatching($rdf.sym(webid), PIM('storage'), undefined);
+
+            let ret = {};
+            ret.account = accountStatements[0].object.value;
+            ret.storage = storageStatements[0].object.value;
+            callback(ret);
+        })
     }
 
     //Register function TODO: change this
@@ -59,7 +79,7 @@ class AccountManager{
         async function loginToSolid(idp) {
             const session = await auth.currentSession();
             if (!session)
-                await auth.popupLogin({popupUri: 'https://localhost:8000/popup'});
+                await auth.login(idp);
             else
                 console.log('Logged in as ', session.webId);
         }

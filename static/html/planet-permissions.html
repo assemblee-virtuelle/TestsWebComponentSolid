@@ -1,0 +1,174 @@
+<template id="planet-permissions">
+    <style>
+        #list{
+            display:flex;
+            flex-direction:column;
+        }
+
+        .mainDiv{
+            display:flex;
+            flex-direction:row;
+        }
+
+        .webidDiv{
+            width:66%;
+        }
+
+        .permDiv{
+            width:33%;
+        }
+    </style>
+    <div id="list">
+    </div>
+</template>
+<script>
+    let planet_permissions_template = document.currentScript.ownerDocument.getElementById('planet-permissions');
+
+    class PlanetPermissions extends HTMLElement {
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = planet_permissions_template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.permList = this.shadowRoot.getElementById("list");
+        }
+
+        connectedCallback(){
+
+        }
+
+        static get observedAttributes(){
+            return ['data-acl', 'data-uri'];
+        }
+
+        get uri(){
+            return this.getAttribute('data-uri');
+        }
+
+        set uri(_uri){
+            if (_uri){
+                this.setAttribute('data-uri', _uri);
+            }
+        }
+
+        get acl(){
+            return this.getAttribute('data-acl');
+        }
+
+        set acl(_acl){
+            if (_acl){
+                this.setAttribute('data-acl', _acl);
+            }
+        }
+
+        setPostal(postal){
+            if (postal){
+                this.postal = postal;
+            }
+            this.setPostalChannels();
+        }
+
+        setPostalChannels(){
+            postal.subscribe({
+                channel:'permissions',
+                topic:'sendPermissions',
+                callback:this.populatePermList.bind(this)
+            })
+        }
+
+        populatePermList(data){
+            console.log('data :', data);
+            for(const group in data){
+                if (data.hasOwnProperty(group)){
+                    const element = data[group];
+                    for(let i = 0; i < element.length; i++){
+                        let perm = [];
+                        for(let j = 0; j < element['permissions'].length; j++){
+                            perm.push(this.permissionFromUri(element['permissions'][j]));
+                        }
+                        this.newLine(element[i], perm);
+                    }
+                }
+            }
+        }
+
+        newLine(webid, perm){
+            let mainDiv = document.createElement('div');
+            let webidDiv = document.createElement('div');
+            let permDiv = document.createElement('div');
+
+            let checkBoxRead = document.createElement('input');
+            checkBoxRead.setAttribute('type', 'checkbox');
+            let permTextRead = document.createElement('span');
+
+            let checkBoxWrite = document.createElement('input');
+            checkBoxWrite.setAttribute('type', 'checkbox');
+            let permTextWrite = document.createElement('span');
+
+            let checkBoxAppend = document.createElement('input');
+            checkBoxAppend.setAttribute('type', 'checkbox');
+            let permTextAppend = document.createElement('span');
+
+            let checkBoxControl = document.createElement('input');
+            checkBoxControl.setAttribute('type', 'checkbox');
+            let permTextControl = document.createElement('span');
+
+            mainDiv.className = 'mainDiv';
+            webidDiv.className = 'webidDiv';
+            permDiv.className = 'permDiv';
+
+            permTextRead.innerText = 'Read';
+            permTextWrite.innerText = 'Write';
+            permTextAppend.innerText = 'Append';
+            permTextControl.innerText = 'Control';
+
+            permDiv.appendChild(checkBoxRead);
+            permDiv.appendChild(permTextRead);
+            permDiv.appendChild(checkBoxWrite);
+            permDiv.appendChild(permTextWrite);
+            permDiv.appendChild(checkBoxAppend);
+            permDiv.appendChild(permTextAppend);
+            permDiv.appendChild(checkBoxControl);
+            permDiv.appendChild(permTextControl);
+
+            webidDiv.innerText = webid;
+
+            for(let i = 0; i < perm.length; i++){
+
+            }
+
+            mainDiv.appendChild(webidDiv);
+            mainDiv.appendChild(permDiv);
+
+            this.permList.appendChild(mainDiv);
+        }
+
+        permissionFromUri(perm){
+            switch (perm) {
+                case 'http://www.w3.org/ns/auth/acl#Write':
+                    return 'Write';
+                case 'http://www.w3.org/ns/auth/acl#Read':
+                    return 'Read';
+                case 'http://www.w3.org/ns/auth/acl#Append':
+                    return 'Append';
+                case 'http://www.w3.org/ns/auth/acl#Control':
+                    return 'Control';
+                default:
+                    return null;
+            }
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (newValue != null && name == 'data-acl'){
+                this.postal.publish({
+                    channel:'permissions',
+                    topic:'urichange',
+                    data: {acl:this.acl, uri:this.uri}
+                })
+            }
+        }
+    }
+    window.customElements.define('planet-permissions', PlanetPermissions);
+</script>

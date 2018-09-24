@@ -10,6 +10,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 window.postal = postal;
 
 const solidPort = 8443;
+const defaultUri = 'https://localhost:8000';
 const solidUri = `https://localhost:${solidPort}/`;
 let webid = "";
 let registerEndpoint = "api/accounts/new";
@@ -32,15 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
     var PH = new PlanetHandler(options);
 
     //Check if the user is connected or not
-    accountManager.checkConnect(_webID => {
-        webid = _webID;
-        if (webid && webid != ""){
-            //If the user is connected and has a webID, reload the path and load the planet list
-            PH.reloadListPath();
+    accountManager.checkConnect(accountUri => {
+        if (accountUri && accountUri != ""){
+            //If the user is connected and has an account uri, reload the path and load the planet list
+            PH.listPath(accountUri);
+            webid = accountManager.webid;
             loadList();
             publishLoggedStatus(true);
         } else {
-            PH.reloadListPath();
+            PH.listPath(defaultUri);
             publishLoggedStatus(false);
         }
     });
@@ -50,111 +51,124 @@ document.addEventListener('DOMContentLoaded', () => {
     planetInterface = document.querySelector('planet-interface');
 
     //#region Postal Channels Configuration
-    connectInterface.setPostal(postal);
-    planetInterface.setPostal(postal);
+        connectInterface.setPostal(postal);
+        planetInterface.setPostal(postal);
 
-    let register = postal.subscribe({
-        channel:'auth',
-        topic:'register',
-        callback: accountManager.register.bind(accountManager)
-    });
-    let login = postal.subscribe({
-        channel: 'auth',
-        topic: 'login',
-        callback: (data) => {
-            accountManager.providerUri = "https://localhost:8443/";
-            accountManager.login();
-        }
-    });
-    let logout = postal.subscribe({
-        channel:'auth',
-        topic:'logout',
-        callback: () => {
-            accountManager.logout();
-            connectInterface.triggerConnect();
-        }
-    });
-    postal.subscribe({
-        channel:'planet',
-        topic:'addNew',
-        callback: (data, enveloppe) => {
+        postal.subscribe({
+            channel:'permissions',
+            topic:'urichange',
+            callback: (data => {
+                PH.fetchPermissions(data, parsed => {
+                    if (parsed){
+                        postal.publish({
+                            channel:'permissions',
+                            topic:'sendPermissions',
+                            data:parsed
+                        })
+                    } else {
+                        console.log("no specific acl file for this resource");
+                    }
+                })
+            })
+
+        })
+        postal.subscribe({
+            channel:'auth',
+            topic:'register',
+            callback: accountManager.register.bind(accountManager)
+        });
+        postal.subscribe({
+            channel: 'auth',
+            topic: 'login',
+            callback: (data) => {
+                accountManager.providerUri = "https://localhost:8443/";
+                accountManager.login();
+            }
+        });
+        postal.subscribe({
+            channel:'auth',
+            topic:'logout',
+            callback: () => {
+                accountManager.logout();
+                connectInterface.triggerConnect();
+            }
+        });
+        postal.subscribe({
+            channel:'planet',
+            topic:'addNew',
+            callback: (data, enveloppe) => {
+                postal.publish({
+                    channel:'planetInterface',
+                    topic:'switchToForm',
+                    data: null
+                });
+            }
+        });
+        postal.subscribe({
+            channel:'planet',
+            topic:'editConfirm',
+            callback: (data, enveloppe) => {
+                PH.editPlanet(data['form'], data['uri'])
+                .then(res => {
+                    loadList();
+                    switchToList();
+                })
+                .catch(err => console.log('err editing :', err))
+            }
+        });
+        postal.subscribe({
+            channel:'planet',
+            topic:'delete',
+            callback: (data, enveloppe) => {
+                PH.deletePlanet(data).then(res => {
+                    loadList();
+                    switchToList();
+                })
+            }
+        });
+        postal.subscribe({
+            channel:'planet',
+            topic:'addNewConfirm',
+            callback: (data, enveloppe) => {
+                PH.addNewPlanet(data)
+                .then(res => {
+                    loadList();
+                    switchToList();
+                })
+                .catch(err => console.log('err adding new planet:', err))
+            }
+        });
+        postal.subscribe({
+            channel:'planet',
+            topic:'formCancel',
+            callback: (data, enveloppe) => {
+                switchToList();
+            }
+        })
+        postal.subscribe({
+            channel:'planet',
+            topic: 'loadList',
+            callback: (data, enveloppe) => {
+                loadList();
+            }
+        })
+        function switchToList(){
             postal.publish({
                 channel:'planetInterface',
-                topic:'switchToForm',
+                topic:'switchToList',
                 data: null
             });
         }
-    });
-    let editPlanet = postal.subscribe({
-        channel:'planet',
-        topic:'editConfirm',
-        callback: (data, enveloppe) => {
-            PH.editPlanet(data['form'], data['uri'])
-            .then(res => {
-                loadList();
-                switchToList();
-            })
-            .catch(err => console.log('err editing :', err))
+        function publishLoggedStatus(islogged){
+            postal.publish({
+                channel:'auth',
+                topic:'status',
+                data:{
+                    connected: islogged, 
+                    webid:webid
+                }
+            });
         }
-    });
-    let deletePlanet = postal.subscribe({
-        channel:'planet',
-        topic:'delete',
-        callback: (data, enveloppe) => {
-            PH.deletePlanet(data).then(res => {
-                loadList();
-                switchToList();
-            })
-        }
-    });
-    let addNewPlanet = postal.subscribe({
-        channel:'planet',
-        topic:'addNewConfirm',
-        callback: (data, enveloppe) => {
-            PH.addNewPlanet(data)
-            .then(res => {
-                loadList();
-                switchToList();
-            })
-            .catch(err => console.log('err adding new planet:', err))
-        }
-    });
-
-    function switchToList(){
-        postal.publish({
-            channel:'planetInterface',
-            topic:'switchToList',
-            data: null
-        });
-    }
-
-    let cancelForm = postal.subscribe({
-        channel:'planet',
-        topic:'formCancel',
-        callback: (data, enveloppe) => {
-            switchToList();
-        }
-    })
-
-    let loadListChannel = postal.subscribe({
-        channel:'planet',
-        topic: 'loadList',
-        callback: (data, enveloppe) => {
-            loadList();
-        }
-    })
-
-
-    function publishLoggedStatus(islogged){
-        postal.publish({
-            channel:'auth',
-            topic:'status',
-            data:{
-                connected: islogged, 
-                webid:webid
-            }
-        });
-    }
     //#endregion
 
     function loadList(){

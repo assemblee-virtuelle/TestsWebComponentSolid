@@ -96,7 +96,6 @@
 
         setPostal(){
             this.postal = postal;
-            this.setPostalChannels();
         }
 
         generateList(list){
@@ -114,6 +113,7 @@
             let line = document.createElement("tr");
 
             line.setAttribute("data-uri", uri);
+            line.setAttribute("data-acl", planetInfo.acl);
 
             //Creates tds define len
             let tdLen = 4;
@@ -177,6 +177,7 @@
                 let line = e.target.closest("tr");
                 let inputs = {};
                 let uri = line.getAttribute('data-uri');
+                let acl = line.getAttribute('data-acl');
                 let tdlist = line.querySelectorAll("td[name]");
                 let ret = {};
 
@@ -185,6 +186,7 @@
                 }
                 ret.inputs = inputs;
                 ret.uri = uri;
+                ret.acl = acl;
 
                 this.postal.publish({
                     channel:'planetInterface',
@@ -205,10 +207,6 @@
                     data: uri
                 })
             }
-        }
-
-        setPostalChannels(){
-
         }
     }
     window.customElements.define("planet-list", PlanetList);
