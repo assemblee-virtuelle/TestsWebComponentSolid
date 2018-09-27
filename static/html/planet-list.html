@@ -46,10 +46,16 @@
         tbody{
             background-color: #9affbe;
         }
+        #listName{
+            width:270px;
+        }
     </style>
 
     <div id="list-block">
         <h1 class="title">Liste des planètes</h1>
+        <label for="listName">Charger la liste :</label>
+        <input type="text" id="listName">
+        <button id="submitName">Submit</button>
         <table>
             <thead>
                 <tr id="tab_header">
@@ -79,10 +85,25 @@
             const instance = planet_list_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
             this.table = this.shadowRoot.getElementById("tab");
+            this.listName = this.shadowRoot.getElementById("listName");
         }
 
         connectedCallback(){
             this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
+            this.shadowRoot.getElementById("submitName").addEventListener('click', ev => {
+                this.submitName(ev);
+            });
+        }
+
+        submitName(ev){
+            let list = this.listName.value;
+            if (this.defaultName != list){
+                this.postal.publish({
+                    channel:'interface',
+                    topic:'changeList',
+                    data:list
+                })
+            }
         }
 
         onAddClick(){
@@ -98,7 +119,10 @@
             this.postal = postal;
         }
 
-        generateList(list){
+        generateList(data){
+            let list = data.list;
+            this.listName.setAttribute('value', data.uri);
+            this.defaultName = this.listName.value;
             this.table.innerHTML = "";
             for(const key in list){
                 if (list.hasOwnProperty(key)){

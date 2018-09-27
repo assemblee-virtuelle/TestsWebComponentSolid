@@ -39,11 +39,13 @@ class PlanetHandler{
                 }
                 Promise.all(promisesArray)
                 .then(list => {
-                    for(let i = 0; i < list.length; i++){
-                        this.planetList[list[i].uri] = list[i];
+                    if (list){
+                        for(let i = 0; i < list.length; i++){
+                            if (list[i] && list[i] != undefined)
+                                this.planetList[list[i].uri] = list[i];
+                        }
                     }
-                    console.log('this.planetList :', this.planetList);
-                    resolve(this.planetList);
+                    resolve({list:this.planetList, listUri:this.pathToList, uri:this.account.uri});
                 });
             })
             .catch(err => {
@@ -57,7 +59,6 @@ class PlanetHandler{
      */
     hasPlanetList(){
         return new Promise((resolve, reject) => {
-            console.log('this.pathToList :', this.pathToList);
             this.account.fetch(this.pathToList, {
                 method:'HEAD'
             })
@@ -239,6 +240,7 @@ class PlanetHandler{
         return tab;
     }
 
+
     //Fetches a planet from its uri
     fetchPlanet(uri){
         return new Promise((resolve, reject) => {
@@ -261,10 +263,10 @@ class PlanetHandler{
                     resolve(planet);
                 } else if (status == 403 || status == 401){
                     console.log("Unauthorised or access denied");
-                    reject("Unauthorised or access denied");
+                    resolve();
                 } else {
                     console.log("planet empty");
-                    reject("Planet is empty");
+                    resolve();
                 }
             })
             .catch(err => reject(err));
@@ -301,7 +303,8 @@ class PlanetHandler{
             for(let i = 0; i < webids.length; i++){
                 if (webids[i].subject.value != key)
                     tab = [];
-                tab.push(webids[i].object.value);
+                if (webids[i].object.value != this.account.webid)
+                    tab.push(webids[i].object.value);
                 key = webids[i].subject.value;
                 ret[key] = tab;
             }
@@ -349,21 +352,84 @@ class PlanetHandler{
             .then(res => res.text())
             .then(triples => {
                 let parsed = this.parsePlanetAcl(triples, aclUri);
-                console.log('parsed :', parsed);
                 this.planetList[uri].hasAcl = true;
-
                 callback(parsed);
             })
         })
         .catch(err => {
             if (err == 'no acl'){
-                //this.planetList[uri].hasAcl = false;
+                console.log("No specific acl");
             }
             this.planetList[uri].hasAcl = false;
             callback();
         })
+    }
 
-    }   
+    addNewPerm(data, callback){
+        let parsed = this.parseDataToSparql(data);
+        this.account.fetch(this.pathToList + data.acl, {
+            method:'PATCH',
+            headers: {'Content-Type':'application/sparql-update'},
+            body:parsed
+        }).then(res => {
+            if(res.status == 200){
+                this.fetchPermissions(data, parsed => {
+                    callback(parsed);
+                })
+            }
+        })
+    }
+
+    deletePerm(data, callback){
+
+        let parsed = this.parseDeleteToSparql(data);
+        this.account.fetch(this.pathToList + data.acl, {
+            method:'PATCH',
+            headers: {'Content-Type':'application/sparql-update'},
+            body:parsed
+        }).then(res => {
+            if(res.status == 200){
+                this.fetchPermissions(data, parsed => {
+                    callback(parsed);
+                })
+            }
+        })
+    }
+
+    parseDeleteToSparql(data){
+        let query = `DELETE {?subject ${ACL('agent')} ${$rdf.sym(data.webid)}}
+        WHERE {
+            ?subject ${ACL('agent')} ${$rdf.sym(data.webid)}
+        }`;
+        return query;
+    }
+
+    parseDataToSparql(data){
+        let webid = data.webid;
+        let resource = data.uri;
+        let perm = data.perm;
+
+
+        let group = "";
+        for(let i = 0; i < perm.length; i++){
+            group += perm[i].charAt(0);
+        }
+        let up = group.toUpperCase();
+        let symGroup = $rdf.sym(resource + '#' + up);
+
+        let query = `INSERT {`;
+        query += `${symGroup} ${RDF('type')} ${ACL('Authorization')};`
+        if (this.planetList[resource].hasAcl == false){
+            console.log("acl not set");
+            query += `${ACL('agent')} ${$rdf.sym(this.account.webid)} ;`
+        }
+        query += `${ACL('agent')} ${$rdf.sym(webid)};`
+        perm.forEach(val => {
+            query+= `${ACL('mode')} ${ACL(val)};`
+        })
+        query += `${ACL('accessTo')} ${$rdf.sym(resource)}.}`
+        return query;
+    }
 
     //Fetches the planet list 
     fetchPlanetList(){

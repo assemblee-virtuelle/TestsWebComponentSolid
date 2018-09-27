@@ -48,6 +48,7 @@ class AccountManager{
 
             let ret = {};
             ret.account = accountStatements[0].object.value;
+            this.uri = ret.account;
             ret.storage = storageStatements[0].object.value;
             callback(ret);
         })

@@ -6,6 +6,7 @@
         }
 
         .mainDiv{
+            background-color:rgb(102, 184, 231);
             display:flex;
             flex-direction:row;
         }
@@ -15,10 +16,60 @@
         }
 
         .permDiv{
+            border-left:2px solid black;
             width:33%;
+            display:flex;
+            justify-content:space-between;
         }
+
+        .control{
+            padding: 0px 5px 0px 5px;
+            background-color:aquamarine;
+        }
+
+        #newPerm, #checkboxDiv{
+            display:flex;
+        }
+
+        #newPerm{
+            margin-top:10px;
+            justify-content: space-evenly;
+            background-color: antiquewhite;
+            border:1px dashed lightblue;
+        }
+
+        #webidField{
+            width: 400px;
+        }
+
+        .delete{
+            cursor: pointer;
+        }        
+        
     </style>
     <div id="list">
+    </div>
+    <div id="newPerm">
+        <div id="textDiv">
+            <label for="webidField">WebID:</label>
+            <input id="webidField" type="text">
+        </div>
+        <div id="checkboxDiv">
+            <div id="readDiv">
+                <input id="Read" type="checkbox">
+                <label for="Read">Read</label>
+            </div>
+            <div id="writeDiv">
+                <input id="Write" type="checkbox">
+                <label for="Write">Write</label>
+            </div>
+            <div id="controlDiv">
+                <input id="Control" type="checkbox">
+                <label for="Control">Control</label>
+            </div>
+        </div>
+        <br>
+        <button id="submitBtn">OK</button>
     </div>
 </template>
 <script>
@@ -33,10 +84,29 @@
             const instance = planet_permissions_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
             this.permList = this.shadowRoot.getElementById("list");
+            this.okBtn = this.shadowRoot.getElementById("submitBtn");
+            this.permForm = this.shadowRoot.getElementById("newPerm");
         }
 
         connectedCallback(){
+            this.okBtn.addEventListener('click', this.submitPermission.bind(this));
+        }
 
+        submitPermission(){
+            let webid = this.permForm.querySelector('input[type=text]').value;
+            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked')
+            let permArr = [];
+            console.log('webid :', webid);
+            console.log('permissions :', permissions);
+
+            for(let i = 0; i < permissions.length; i++){
+                permArr.push(permissions[i].id)
+            }
+            this.postal.publish({
+                channel:'permissions',
+                topic:'addNewPerm',
+                data:{webid:webid, perm:permArr, acl:this.acl, uri:this.uri}
+            })
         }
 
         static get observedAttributes(){
@@ -79,7 +149,7 @@
         }
 
         populatePermList(data){
-            console.log('data :', data);
+            this.permList.innerHTML = "";
             for(const group in data){
                 if (data.hasOwnProperty(group)){
                     const element = data[group];
@@ -95,25 +165,45 @@
         }
 
         newLine(webid, perm){
+
             let mainDiv = document.createElement('div');
             let webidDiv = document.createElement('div');
             let permDiv = document.createElement('div');
-
+            
+            let readDiv = document.createElement('div');
+            readDiv.className = "perm read";
             let checkBoxRead = document.createElement('input');
             checkBoxRead.setAttribute('type', 'checkbox');
             let permTextRead = document.createElement('span');
+            readDiv.appendChild(checkBoxRead);
+            readDiv.appendChild(permTextRead);
 
+            let writeDiv = document.createElement('div');
+            writeDiv.className = "perm write";
             let checkBoxWrite = document.createElement('input');
             checkBoxWrite.setAttribute('type', 'checkbox');
             let permTextWrite = document.createElement('span');
+            writeDiv.appendChild(checkBoxWrite);
+            writeDiv.appendChild(permTextWrite);
 
-            let checkBoxAppend = document.createElement('input');
-            checkBoxAppend.setAttribute('type', 'checkbox');
-            let permTextAppend = document.createElement('span');
-
+            let controlDiv = document.createElement('div');
+            controlDiv.className = "perm control";
             let checkBoxControl = document.createElement('input');
             checkBoxControl.setAttribute('type', 'checkbox');
             let permTextControl = document.createElement('span');
+            controlDiv.appendChild(checkBoxControl);
+            controlDiv.appendChild(permTextControl);
+
+            let deleteDiv = document.createElement('div');
+            deleteDiv.className = "delete";
+            let deleteImg = document.createElement('img');
+            deleteImg.setAttribute('src', '/images/cancel.png');
+            deleteImg.style.width = '20px';
+            deleteDiv.appendChild(deleteImg);
+
+            deleteDiv.addEventListener('click', ev => {
+                this.deletePerm(ev);
+            });
 
             mainDiv.className = 'mainDiv';
             webidDiv.className = 'webidDiv';
@@ -121,24 +211,31 @@
 
             permTextRead.innerText = 'Read';
             permTextWrite.innerText = 'Write';
-            permTextAppend.innerText = 'Append';
             permTextControl.innerText = 'Control';
 
-            permDiv.appendChild(checkBoxRead);
-            permDiv.appendChild(permTextRead);
-            permDiv.appendChild(checkBoxWrite);
-            permDiv.appendChild(permTextWrite);
-            permDiv.appendChild(checkBoxAppend);
-            permDiv.appendChild(permTextAppend);
-            permDiv.appendChild(checkBoxControl);
-            permDiv.appendChild(permTextControl);
+            permDiv.appendChild(readDiv);
+            permDiv.appendChild(writeDiv);
+            permDiv.appendChild(controlDiv);
 
             webidDiv.innerText = webid;
 
             for(let i = 0; i < perm.length; i++){
-
+                switch (perm[i]) {
+                    case 'Write':
+                    checkBoxWrite.setAttribute('checked', true);
+                        break;
+                    case 'Read':
+                    checkBoxRead.setAttribute('checked', true);
+                        break;
+                    case 'Control':
+                    checkBoxControl.setAttribute('checked', true);
+                        break;
+                    default:
+                        break; null;
+                }
             }
 
+            mainDiv.appendChild(deleteDiv);
             mainDiv.appendChild(webidDiv);
             mainDiv.appendChild(permDiv);
 
@@ -151,8 +248,6 @@
                     return 'Write';
                 case 'http://www.w3.org/ns/auth/acl#Read':
                     return 'Read';
-                case 'http://www.w3.org/ns/auth/acl#Append':
-                    return 'Append';
                 case 'http://www.w3.org/ns/auth/acl#Control':
                     return 'Control';
                 default:
@@ -160,8 +255,19 @@
             }
         }
 
+        deletePerm(ev){
+            let webid = ev.target.parentNode.parentNode.children[1].innerText;
+
+            this.postal.publish({
+                channel:'permissions',
+                topic:'deletePerm',
+                data:{webid:webid, acl:this.acl, uri:this.uri}
+            })
+        }
+
         attributeChangedCallback(name, oldValue, newValue) {
             if (newValue != null && name == 'data-acl'){
+                this.permList.innerHTML = "";
                 this.postal.publish({
                     channel:'permissions',
                     topic:'urichange',

@@ -64,14 +64,56 @@ document.addEventListener('DOMContentLoaded', () => {
                             channel:'permissions',
                             topic:'sendPermissions',
                             data:parsed
-                        })
+                        });
                     } else {
                         console.log("no specific acl file for this resource");
                     }
                 })
             })
-
         })
+
+        postal.subscribe({
+            channel:'permissions',
+            topic:'deletePerm',
+            callback: (data => {
+                PH.deletePerm(data, parsed => {
+                    if(parsed){
+                        postal.publish({
+                            channel:'permissions',
+                            topic:'sendPermissions',
+                            data:parsed
+                        });
+                    }
+                });
+            })
+        });
+
+        postal.subscribe({
+            channel:'interface',
+            topic:'changeList',
+            callback: (uri => {
+                console.log("loading list");
+                PH.listPath(uri);
+                loadList();
+            })
+        })
+
+        postal.subscribe({
+            channel:'permissions',
+            topic:'addNewPerm',
+            callback:(data => {
+                PH.addNewPerm(data, parsed => {
+                    if(parsed){
+                        postal.publish({
+                            channel:'permissions',
+                            topic:'sendPermissions',
+                            data:parsed
+                        });
+                    }
+                })
+            })
+        })
+
         postal.subscribe({
             channel:'auth',
             topic:'register',
