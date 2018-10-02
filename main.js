@@ -123,7 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
             channel: 'auth',
             topic: 'login',
             callback: (data) => {
-                accountManager.providerUri = "https://localhost:8443/";
+                if (data){
+                    accountManager.providerUri = "https://localhost:8443/";
+                } else {
+                    accountManager.providerUri = "https://localhost:8443/";
+                }
                 accountManager.login();
             }
         });

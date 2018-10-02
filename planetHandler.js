@@ -320,7 +320,11 @@ class PlanetHandler{
                 }
             }
         }
-        return ret;
+
+        let dataRet = {};
+        dataRet.perm = ret;
+        dataRet.store = store;
+        return dataRet;
     }
 
     aclExist(acl){
@@ -351,9 +355,10 @@ class PlanetHandler{
             })
             .then(res => res.text())
             .then(triples => {
-                let parsed = this.parsePlanetAcl(triples, aclUri);
+                let data = this.parsePlanetAcl(triples, aclUri);
                 this.planetList[uri].hasAcl = true;
-                callback(parsed);
+                this.planetList[uri].aclStore = data.store;
+                callback(data.perm);
             })
         })
         .catch(err => {
@@ -397,6 +402,18 @@ class PlanetHandler{
     }
 
     parseDeleteToSparql(data){
+
+        // let aclStore = this.planetList[data.uri].aclStore;
+        // console.log('data.webid :', data.webid);
+        // let subjList = aclStore.statementsMatching(undefined, ACL('agent'), $rdf.sym(data.webid));
+        // console.log('aclStore :', aclStore);
+
+        // console.log('subjList :', subjList);
+        // for(let i = 0; i < subjList.length; i++){
+        //     console.log(subjList[i].subject.value);
+        //     aclStore.remove($rdf.sym(subjList[i].subject.value), ACL('agent'), $rdf.sym(data.webid));
+
+        // }
         let query = `DELETE {?subject ${ACL('agent')} ${$rdf.sym(data.webid)}}
         WHERE {
             ?subject ${ACL('agent')} ${$rdf.sym(data.webid)}
@@ -408,7 +425,6 @@ class PlanetHandler{
         let webid = data.webid;
         let resource = data.uri;
         let perm = data.perm;
-
 
         let group = "";
         for(let i = 0; i < perm.length; i++){

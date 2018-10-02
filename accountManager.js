@@ -80,7 +80,7 @@ class AccountManager{
         async function loginToSolid(idp) {
             const session = await auth.currentSession();
             if (!session)
-                await auth.login(idp);
+                await auth.popupLogin({ popupUri:'https://localhost:8443/popup.html' });
             else
                 console.log('Logged in as ', session.webId);
         }
