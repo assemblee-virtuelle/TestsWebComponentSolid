@@ -78,6 +78,27 @@ class PlanetHandler{
         })
     }
 
+    createPlanetListAcl(){
+        let triples = `
+        ${$rdf.sym(this.pathToList + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
+        ${ACL('agent')} ${$rdf.sym(this.account.webid)};
+        ${ACL('accessTo')} ${$rdf.sym(this.pathToList)};
+        ${ACL('default')} ${$rdf.sym(this.pathToList)};
+        ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.
+        `;
+        return new Promise((resolve, reject) => {
+            this.account.fetch(this.pathToList + ".acl", {
+                method: 'PUT',
+                body: triples
+            }).then(resp => {
+                if(resp.status === 200) {
+                    resolve();
+                }
+                console.log('resp :', resp);
+            })
+        })
+    }
+
     //Creates the planet List
     createPlanetList(){
         return new Promise((resolve, reject) => {
@@ -92,7 +113,7 @@ class PlanetHandler{
             .then(res => {
                 
                 //console.log('Planet list created !');
-                resolve();
+                this.createPlanetListAcl().then(res => resolve());
             })
             .catch(err => {
                 console.log('err creation :', err);
@@ -425,25 +446,30 @@ class PlanetHandler{
         let webid = data.webid;
         let resource = data.uri;
         let perm = data.perm;
-
-        let group = "";
-        for(let i = 0; i < perm.length; i++){
-            group += perm[i].charAt(0);
-        }
-        let up = group.toUpperCase();
-        let symGroup = $rdf.sym(resource + '#' + up);
+        let subj = 1;
 
         let query = `INSERT {`;
-        query += `${symGroup} ${RDF('type')} ${ACL('Authorization')};`
-        if (this.planetList[resource].hasAcl == false){
-            console.log("acl not set");
-            query += `${ACL('agent')} ${$rdf.sym(this.account.webid)} ;`
+        if(this.planetList[resource].hasAcl == true){
+            let test = this.planetList[resource].aclStore.each(undefined, RDF('type'),ACL('Authorization'));
+            console.log('test :', test);
+            subj = test.length + 1;
+        } else {
+            query += `${$rdf.sym(resource + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
+            ${ACL('agent')} ${$rdf.sym(this.account.webid)};
+            ${ACL('accessTo')} ${$rdf.sym(resource)};
+            ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.}`
         }
-        query += `${ACL('agent')} ${$rdf.sym(webid)};`
+
+        query += `INSERT { ${$rdf.sym(resource + "#id" + subj)} ${RDF('type')} ${ACL('Authorization')};`;
+        // if (this.planetList[resource].hasAcl == false){
+        //     console.log("acl not set");
+        //     query += `${ACL('agent')} ${$rdf.sym(this.account.webid)} ;`;
+        // }
+        query += `${ACL('agent')} ${$rdf.sym(webid)};`;
         perm.forEach(val => {
-            query+= `${ACL('mode')} ${ACL(val)};`
-        })
-        query += `${ACL('accessTo')} ${$rdf.sym(resource)}.}`
+            query+= `${ACL('mode')} ${ACL(val)};`;
+        });
+        query += `${ACL('accessTo')} ${$rdf.sym(resource)}.}`;
         return query;
     }
 

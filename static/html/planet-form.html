@@ -1,174 +1,308 @@
 <template id="planet-form">
-        <style>
-            #inputInfo{
-                display:flex;
-                flex-direction: column;
-                width: fit-content;
-            }
-            .inputs{
-                display:flex;
-                flex-direction:row;
-                margin-bottom:5px;
-                justify-content: flex-end;
-            }
-            label{
-                margin-right:5px;
-            }
-            #buttons{
-                margin-top:15px;
-            }
-            #form-block{
-                width:fit-content;
-                margin:0 auto;
-                text-align: center;
-                padding: 20px;
-                padding-bottom:10px;
-                border-radius:3px;
-                border: 2px dashed #2bc4d4;
-            }
-        </style>
+    <style>
+        #inputInfo{
+            display:flex;
+            flex-direction: column;
+            width: fit-content;
+        }
+        .inputs{
+            display:flex;
+            flex-direction:row;
+            margin-bottom:5px;
+            justify-content: flex-end;
+        }
+        label{
+            margin-right:5px;
+        }
+        #buttons{
+            margin-top:15px;
+        }
+        #form-block{
+            width:fit-content;
+            margin:0 auto;
+            text-align: center;
+            padding: 20px;
+            padding-bottom:10px;
+            border-radius:3px;
+            border: 2px dashed #2bc4d4;
+        }
+        #webidField{
+            width: 400px;
+        }
 
-        <h1 class="title">Informations de la planète</h1>
-        <div id="form-block">
-            <form action="" id="planetForm">
-                <div id="inputInfo">
-                    <div id="inputName" class="inputs">
-                        <label for="name">Nom de la planète : </label>
-                        <input type="text" id="name" name="name">
-                    </div>
-                    <div id="inputRay" class="inputs">
-                        <label for="radius">Rayon (km) : </label>
-                        <input type="text" id="radius" name="radius">
-                    </div>
-                    <div id="inputTemp" class="inputs">
-                        <label for="temp" >Température en surface (°C) : </label>
-                        <input type="text" id="temp" name="temperature">
-                    </div>
-                    <input type="hidden" name="uri" value="">
+        #newPerm, #checkboxDiv{
+            display:flex;
+        }
+        
+        #newPerm{
+            margin-top:10px;
+            justify-content: space-evenly;
+            background-color: antiquewhite;
+            border:1px dashed lightblue;
+        }
+    </style>
+
+    <h1 class="title">Informations de la planète</h1>
+    <div id="form-block">
+        <form action="" id="planetForm">
+            <div id="inputInfo">
+                <div id="inputName" class="inputs">
+                    <label for="name">Nom de la planète : </label>
+                    <input type="text" id="name" name="name">
                 </div>
-                <div id="buttons">
-                    <button id="btn_submit">SAVE</button>
-                    <button id="cancel">CANCEL</button>
+                <div id="inputRay" class="inputs">
+                    <label for="radius">Rayon (km) : </label>
+                    <input type="text" id="radius" name="radius">
                 </div>
-            </form>
+                <div id="inputTemp" class="inputs">
+                    <label for="temp" >Température en surface (°C) : </label>
+                    <input type="text" id="temp" name="temperature">
+                </div>
+                <input type="hidden" name="uri" value="">
+            </div>
+            <div id="buttons">
+                <button id="btn_submit">SAVE</button>
+                <button id="cancel">CANCEL</button>
+            </div>
+        </form>
+    </div>
+    <h2>Add permissions</h2>
+    <div id="perms">
+        <div id="newPerm">
+            <div id="textDiv">
+                <label for="webidField">WebID:</label>
+                <input id="webidField" type="text">
+            </div>
+            <div id="checkboxDiv">
+                <div id="readDiv">
+                    <input id="Read" type="checkbox">
+                    <label for="Read">Read</label>
+                </div>
+                <div id="writeDiv">
+                    <input id="Write" type="checkbox">
+                    <label for="Write">Write</label>
+                </div>
+                <div id="controlDiv">
+                    <input id="Control" type="checkbox">
+                    <label for="Control">Control</label>
+                </div>
+            </div>
+            <br>
+            <button id="submitBtn">OK</button>
         </div>
+    </div>
 
-        <h1>Permissions</h1>
-        <planet-permissions></planet-permissions>
-    </template>
-    <script>
-        let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');;
-        class PlanetForm extends HTMLElement {
-            constructor(){
-                super();
-                const shadowRoot = this.attachShadow({
-                    mode: 'open'
-                });
-                const instance = planet_form_template.content.cloneNode(true);
-                this.shadowRoot.appendChild(instance);
-                this.planetForm = this.shadowRoot.getElementById("planetForm");
-                this.cancelBtn = this.shadowRoot.getElementById("cancel");
-                this.submitBtn = this.shadowRoot.getElementById("btn_submit");
-                this.permissions = this.shadowRoot.querySelector('planet-permissions');
+    <h1>Permissions</h1>
+    <planet-permissions></planet-permissions>
+</template>
+<script>
+    let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');;
+    class PlanetForm extends HTMLElement {
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = planet_form_template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+            this.planetForm = this.shadowRoot.getElementById("planetForm");
+            this.cancelBtn = this.shadowRoot.getElementById("cancel");
+            this.submitBtn = this.shadowRoot.getElementById("btn_submit");
+            this.permissions = this.shadowRoot.querySelector('planet-permissions');
+            this.okBtn = this.shadowRoot.getElementById("submitBtn");
+            this.permForm = this.shadowRoot.getElementById("newPerm");
+            this.permBlock = this.shadowRoot.getElementById("perms")
+            this.permList = {};
+        }
+
+        connectedCallback(){
+            this.okBtn.addEventListener('click', this.confirmPermission.bind(this));
+            this.submitBtn.addEventListener("click", e => {
+                e.preventDefault();
+                this.submit();
+            });
+            this.cancelBtn.addEventListener("click", e => {
+                e.preventDefault();
+                this.cancel();
+            });
+            let inputs = this.planetForm.querySelectorAll('input');
+            this.inputList = {};
+            for (let i = 0; i < inputs.length; i++){
+                this.inputList[inputs[i].name] = inputs[i];
             }
-    
-            connectedCallback(){
-                this.submitBtn.addEventListener("click", e => {
-                    e.preventDefault();
-                    this.submit();
-                });
-                this.cancelBtn.addEventListener("click", e => {
-                    e.preventDefault();
-                    this.cancel();
-                });
-                let inputs = this.planetForm.querySelectorAll('input');
-                this.inputList = {};
-                for (let i = 0; i < inputs.length; i++){
-                    this.inputList[inputs[i].name] = inputs[i];
+        }
+
+        confirmPermission(){
+            let webid = this.permForm.querySelector('input[type=text]').value;
+            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked')
+            let permArr = [];
+            let permObj = {};
+            let exist = 0;
+
+            for(let i = 0; i < permissions.length; i++){
+                permArr.push(permissions[i].id)
+            }
+            permObj['permissions'] = permArr;
+            for (const webid_ in this.permList) {
+                if (this.permList.hasOwnProperty(webid_) && webid_ === webid) {
+                    exist = 1;
                 }
             }
+            if (exist === 0 && permArr.length !== 0 && webid){
+                this.permList[webid] = permObj;
+                this.addNewInputLine();
+            }
+        }
 
-            submit(){
-                let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
-                let ret = {};
+        addNewInputLine(){
+            let newLine = this.permForm.cloneNode(true);
 
-                let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
-                for(let i = 0; i < dataForm.length; i++){
-                    if (dataForm[i].value && dataForm[i].value != "")
-                    ret[dataForm[i].name] = dataForm[i].value;
-                }
-                if (ret['name'] && ret['name'] != ""){
-                    if (!uri || uri == "" && !this.isEmpty(ret)){
-                        this.postal.publish({
-                            channel:'planet',
-                            topic:'addNewConfirm',
-                            data:ret
-                        })
-                    } else {
-                        let _data = {};
-                        _data['form'] = ret;
-                        _data['uri'] = uri;
-                        this.postal.publish({
-                            channel:'planet',
-                            topic:'editConfirm',
-                            data:_data
-                        })
-                    }
-                } else {
-                    console.log("retry with a name");
+            this.permForm.querySelector('input[type=text]').value = "";
+            let oldCheckbox = this.permForm.querySelectorAll('input[type=checkbox]');
+            oldCheckbox.forEach((val) => {
+                val.checked = false;
+            })
+
+            let btn = newLine.querySelector('button');
+            btn.innerText = "Edit";
+            this.fnc = this.editInputLine.bind(this);
+            btn.addEventListener('click', this.fnc);
+            newLine.querySelector('input[type=text]').setAttribute("disabled", true);
+            let checkbox = newLine.querySelectorAll('input[type=checkbox]');
+            checkbox.forEach((val) => {
+                val.setAttribute("disabled", true);
+            })
+
+            this.permBlock.appendChild(newLine);
+        }
+
+        editInputLine(ev){
+            let block = ev.target.parentNode;
+            let btn = block.querySelector('button');
+            let webidInput = block.querySelector('input[type=text]');
+            let webid = webidInput.value
+            let checkbox = block.querySelectorAll('input[type=checkbox]');
+            let permissions = this.permList[webid];
+            delete this.permList[webid];  
+            btn.innerText = "OK";
+            webidInput.removeAttribute("disabled");
+            checkbox.forEach((val) => {
+                val.removeAttribute("disabled");
+            })
+
+            btn.removeEventListener('click', this.fnc);
+
+            btn.addEventListener('click', ev => this.confirmEditInputLine(block, webid));
+        }
+
+        confirmEditInputLine(block, oldWebid){
+            let webidInput = block.querySelector('input[type=text]');
+            let webid = webidInput.value;
+            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked');
+            let permArr = [];
+            let permObj = {};
+            let exist = 0;
+
+            for(let i = 0; i < permissions.length; i++){
+                permArr.push(permissions[i].id)
+            }
+            permObj['permissions'] = permArr;
+            for (const webid_ in this.permList) {
+                if (this.permList.hasOwnProperty(webid_) && webid_ === webid) {
+                    exist = 1;
                 }
             }
-
-            isEmpty(obj) {
-                if (obj == null) return true;
-                if (obj.length > 0)    return false;
-                if (obj.length === 0)  return true;
-                if (typeof obj !== "object") return true;
-                for(var key in obj) {
-                    if (hasOwnProperty.call(obj, key)) return false;
-                }
-                return true;
+            if (exist === 0 && permArr.length !== 0 && webid){
+                this.permList[webid] = permObj;              
+                console.log('this.permLists :', this.permList);
             }
+        }
 
-            cancel(){
-                if (this.postal){
+        submit(){
+            let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
+            let ret = {};
+
+            let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
+            for(let i = 0; i < dataForm.length; i++){
+                if (dataForm[i].value && dataForm[i].value != "")
+                ret[dataForm[i].name] = dataForm[i].value;
+            }
+            if (ret['name'] && ret['name'] != ""){
+                if (!uri || uri == "" && !this.isEmpty(ret)){
                     this.postal.publish({
                         channel:'planet',
-                        topic:'formCancel'
-                    });
-                }
-            }
-
-            setPostal(postal){
-                this.permissions.setPostal(postal);
-                this.postal = postal;
-            }
-
-            setFormData(data){
-                if (data.uri){
-                    this.resetFormData();
-                    this.permissions.setAttribute('data-uri', data.uri);
-                    this.permissions.setAttribute('data-acl', data.acl); //Note: Take care of the call order because of attributeChangedCallback on planet-permissions.html
-                    for(const fieldName in data.inputs){
-                        if (data.inputs.hasOwnProperty(fieldName)){
-                            this.inputList[fieldName].value = data.inputs[fieldName];
-                        }
-                    }
-                    this.shadowRoot.querySelector('input[name="uri"]').value = data.uri;
+                        topic:'addNewConfirm',
+                        data:ret
+                    })
                 } else {
-                    console.log("no uri set");
+                    let _data = {};
+                    _data['form'] = ret;
+                    _data['uri'] = uri;
+                    this.postal.publish({
+                        channel:'planet',
+                        topic:'editConfirm',
+                        data:_data
+                    })
                 }
+            } else {
+                console.log("retry with a name");
             }
+        }
 
-            resetFormData(){
-                for(const field in this.inputList){
-                    if (this.inputList.hasOwnProperty(field)){
+        isEmpty(obj) {
+            if (obj == null) return true;
+            if (obj.length > 0)    return false;
+            if (obj.length === 0)  return true;
+            if (typeof obj !== "object") return true;
+            for(var key in obj) {
+                if (hasOwnProperty.call(obj, key)) return false;
+            }
+            return true;
+        }
 
-                        this.inputList[field].value = "";
+        cancel(){
+            if (this.postal){
+                this.postal.publish({
+                    channel:'planet',
+                    topic:'formCancel'
+                });
+            }
+        }
+
+        setPostal(postal){
+            this.permissions.setPostal(postal);
+            this.postal = postal;
+        }
+
+        setFormData(data){
+            if (data.uri){
+                this.resetFormData();
+                this.permissions.setAttribute('data-uri', data.uri);
+                this.permissions.setAttribute('data-acl', data.acl); //Note: Take care of the call order because of attributeChangedCallback on planet-permissions.html
+                for(const fieldName in data.inputs){
+                    if (data.inputs.hasOwnProperty(fieldName)){
+                        this.inputList[fieldName].value = data.inputs[fieldName];
                     }
                 }
+                this.shadowRoot.querySelector('input[name="uri"]').value = data.uri;
+            } else {
+                console.log("no uri set");
             }
-            
         }
-        window.customElements.define("planet-form", PlanetForm);
-    </script>
+
+        resetFormData(){
+            for(const field in this.inputList){
+                if (this.inputList.hasOwnProperty(field)){
+
+                    this.inputList[field].value = "";
+                }
+            }
+        }
+
+        setPostalChannels(){
+
+        }
+        
+    }
+    window.customElements.define("planet-form", PlanetForm);
+</script>

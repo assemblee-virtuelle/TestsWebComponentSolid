@@ -13,6 +13,7 @@
 
     <planet-list></planet-list>
     <planet-form class="hidden"></planet-form>
+
 </template>
 <script>
     const planetInterfaceTmpl = document.currentScript.ownerDocument.querySelector("#tmpl-planetInterface");
@@ -29,7 +30,7 @@
         }
 
         connectedCallback(){
-
+            
         }
 
         setPostal(postal){
@@ -67,7 +68,6 @@
                 }
             })
         }
-
 
     }
     window.customElements.define('planet-interface', PlanetInterface);

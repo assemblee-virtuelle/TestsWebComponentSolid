@@ -53,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //#region Postal Channels Configuration
         connectInterface.setPostal(postal);
         planetInterface.setPostal(postal);
-
         postal.subscribe({
             channel:'permissions',
             topic:'urichange',
@@ -62,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (parsed){
                         postal.publish({
                             channel:'permissions',
-                            topic:'sendPermissions',
+                            topic:'sendPermissionList',
                             data:parsed
                         });
                     } else {
@@ -71,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             })
         })
-
         postal.subscribe({
             channel:'permissions',
             topic:'deletePerm',
@@ -80,14 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(parsed){
                         postal.publish({
                             channel:'permissions',
-                            topic:'sendPermissions',
+                            topic:'sendPermissionList',
                             data:parsed
                         });
                     }
                 });
             })
         });
-
         postal.subscribe({
             channel:'interface',
             topic:'changeList',
@@ -97,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadList();
             })
         })
-
         postal.subscribe({
             channel:'permissions',
             topic:'addNewPerm',
@@ -106,14 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(parsed){
                         postal.publish({
                             channel:'permissions',
-                            topic:'sendPermissions',
+                            topic:'sendPermissionList',
                             data:parsed
                         });
                     }
                 })
             })
         })
-
         postal.subscribe({
             channel:'auth',
             topic:'register',
@@ -221,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         PH.loadPlanetList().then(list => {
             planetInterface.generateList(list);
         })
-        
     }
 
 });

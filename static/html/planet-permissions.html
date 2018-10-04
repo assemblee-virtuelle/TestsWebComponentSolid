@@ -14,62 +14,22 @@
         .webidDiv{
             width:66%;
         }
-
         .permDiv{
             border-left:2px solid black;
             width:33%;
             display:flex;
             justify-content:space-between;
         }
-
         .control{
             padding: 0px 5px 0px 5px;
             background-color:aquamarine;
         }
-
-        #newPerm, #checkboxDiv{
-            display:flex;
-        }
-
-        #newPerm{
-            margin-top:10px;
-            justify-content: space-evenly;
-            background-color: antiquewhite;
-            border:1px dashed lightblue;
-        }
-
-        #webidField{
-            width: 400px;
-        }
-
         .delete{
             cursor: pointer;
         }        
         
     </style>
     <div id="list">
-    </div>
-    <div id="newPerm" style="display:none">
-        <div id="textDiv">
-            <label for="webidField">WebID:</label>
-            <input id="webidField" type="text">
-        </div>
-        <div id="checkboxDiv">
-            <div id="readDiv">
-                <input id="Read" type="checkbox">
-                <label for="Read">Read</label>
-            </div>
-            <div id="writeDiv">
-                <input id="Write" type="checkbox">
-                <label for="Write">Write</label>
-            </div>
-            <div id="controlDiv">
-                <input id="Control" type="checkbox">
-                <label for="Control">Control</label>
-            </div>
-        </div>
-        <br>
-        <button id="submitBtn">OK</button>
     </div>
 </template>
 <script>
@@ -84,29 +44,10 @@
             const instance = planet_permissions_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
             this.permList = this.shadowRoot.getElementById("list");
-            this.okBtn = this.shadowRoot.getElementById("submitBtn");
-            this.permForm = this.shadowRoot.getElementById("newPerm");
         }
 
         connectedCallback(){
-            this.okBtn.addEventListener('click', this.submitPermission.bind(this));
-        }
-
-        submitPermission(){
-            let webid = this.permForm.querySelector('input[type=text]').value;
-            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked')
-            let permArr = [];
-            console.log('webid :', webid);
-            console.log('permissions :', permissions);
-
-            for(let i = 0; i < permissions.length; i++){
-                permArr.push(permissions[i].id)
-            }
-            this.postal.publish({
-                channel:'permissions',
-                topic:'addNewPerm',
-                data:{webid:webid, perm:permArr, acl:this.acl, uri:this.uri}
-            })
+            
         }
 
         static get observedAttributes(){
@@ -143,7 +84,7 @@
         setPostalChannels(){
             postal.subscribe({
                 channel:'permissions',
-                topic:'sendPermissions',
+                topic:'sendPermissionList',
                 callback:this.populatePermList.bind(this)
             })
         }
@@ -266,13 +207,6 @@
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
-            if (name == 'data-uri'){
-                if (!this.uri){
-                    this.permForm.style.display = 'none';
-                } else {
-                    this.permForm.style.display = 'block';
-                }
-            }
             if (newValue != null && name == 'data-acl'){
 
                 this.permList.innerHTML = "";
