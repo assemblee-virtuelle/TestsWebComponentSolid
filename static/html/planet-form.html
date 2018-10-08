@@ -26,19 +26,26 @@
             border-radius:3px;
             border: 2px dashed #2bc4d4;
         }
-        #webidField{
-            width: 400px;
-        }
 
-        #newPerm, #checkboxDiv{
+        .checkboxDiv{
             display:flex;
         }
-        
-        #newPerm{
-            margin-top:10px;
+
+        .webidDiv{
+            background-color:cornsilk;
+        }
+
+        .webidDiv > input{
+            width:250px;
+        }
+
+        .permLine{
+            display: flex;
+            width: 70%;
+            margin: 0 auto;
             justify-content: space-evenly;
-            background-color: antiquewhite;
-            border:1px dashed lightblue;
+            margin-top: 5px;
+            margin-bottom: 5px;
         }
     </style>
 
@@ -68,28 +75,9 @@
     </div>
     <h2>Add permissions</h2>
     <div id="perms">
-        <div id="newPerm">
-            <div id="textDiv">
-                <label for="webidField">WebID:</label>
-                <input id="webidField" type="text">
-            </div>
-            <div id="checkboxDiv">
-                <div id="readDiv">
-                    <input id="Read" type="checkbox">
-                    <label for="Read">Read</label>
-                </div>
-                <div id="writeDiv">
-                    <input id="Write" type="checkbox">
-                    <label for="Write">Write</label>
-                </div>
-                <div id="controlDiv">
-                    <input id="Control" type="checkbox">
-                    <label for="Control">Control</label>
-                </div>
-            </div>
-            <br>
-            <button id="submitBtn">OK</button>
+        <div id="permList">
         </div>
+        <button id="addNewPermBtn">New Permission</button>
     </div>
 
     <h1>Permissions</h1>
@@ -109,14 +97,15 @@
             this.cancelBtn = this.shadowRoot.getElementById("cancel");
             this.submitBtn = this.shadowRoot.getElementById("btn_submit");
             this.permissions = this.shadowRoot.querySelector('planet-permissions');
-            this.okBtn = this.shadowRoot.getElementById("submitBtn");
-            this.permForm = this.shadowRoot.getElementById("newPerm");
-            this.permBlock = this.shadowRoot.getElementById("perms")
+            this.addBtn = this.shadowRoot.getElementById("addNewPermBtn");
+            this.permBlockList = this.shadowRoot.getElementById("permList");
+            this.line = 0;
             this.permList = {};
         }
 
         connectedCallback(){
-            this.okBtn.addEventListener('click', this.confirmPermission.bind(this));
+            this.createPermLine();
+            this.addBtn.addEventListener('click', this.addNewPerm.bind(this));
             this.submitBtn.addEventListener("click", e => {
                 e.preventDefault();
                 this.submit();
@@ -132,100 +121,124 @@
             }
         }
 
-        confirmPermission(){
-            let webid = this.permForm.querySelector('input[type=text]').value;
-            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked')
-            let permArr = [];
-            let permObj = {};
-            let exist = 0;
+        createPermLine(){
+            //Principal block
+            let newPerm = document.createElement('div');
+            newPerm.id = "newPerm" + this.line;
+            newPerm.className = "permLine";
 
-            for(let i = 0; i < permissions.length; i++){
-                permArr.push(permissions[i].id)
-            }
-            permObj['permissions'] = permArr;
-            for (const webid_ in this.permList) {
-                if (this.permList.hasOwnProperty(webid_) && webid_ === webid) {
-                    exist = 1;
-                }
-            }
-            if (exist === 0 && permArr.length !== 0 && webid){
-                this.permList[webid] = permObj;
-                this.addNewInputLine();
-            }
+            //WebID input block
+            let webidBlock = document.createElement('div');
+            let webidLabel = document.createElement('label');
+            let webidInput = document.createElement('input');
+            webidBlock.className = "webidDiv";
+            webidLabel.setAttribute('for', 'webidInput' + this.line);
+            webidLabel.innerText = "WebID:"
+            webidInput.setAttribute('type', 'text');
+            webidInput.id = 'webidInput' + this.line;
+            
+            //Permissions input block
+            let permBlock = document.createElement('div');
+            let readBlock = document.createElement('div');
+            let writeBlock = document.createElement('div');
+            let controlBlock = document.createElement('div');
+            let readInput = document.createElement('input');
+            let readLabel = document.createElement('label');
+            let writeInput = document.createElement('input');
+            let writeLabel = document.createElement('label');
+            let controlInput = document.createElement('input');
+            let controlLabel = document.createElement('label');
+            permBlock.className = "checkboxDiv";
+            readBlock.className = "readDiv";
+            readInput.id = "read" + this.line;
+            readInput.setAttribute('type', 'checkbox');
+            readInput.setAttribute('name', 'Read');
+            readLabel.setAttribute('for', 'read' + this.line);
+            readLabel.innerText = "Read";
+            writeBlock.className = "writeDiv";
+            writeInput.id = "write" + this.line;
+            writeInput.setAttribute('type', 'checkbox');
+            writeInput.setAttribute('name', 'Write');
+            writeLabel.setAttribute('for', 'write' + this.line);
+            writeLabel.innerText = "Write";
+            controlBlock.className = "controlDiv";
+            controlInput.setAttribute('type', 'checkbox');
+            controlInput.id = "control" + this.line;
+            controlInput.setAttribute('name', 'Control');
+            controlLabel.setAttribute('for', 'control' + this.line);
+            controlLabel.innerText = "Control";
+
+            //Delete btn or img
+            let deleteBlock = document.createElement('div');
+            let deleteBtn = document.createElement('button');
+            deleteBtn.className = "deleteBtn";
+            deleteBtn.innerText = "Delete";
+            deleteBtn.addEventListener('click', this.deletePermLine.bind(this));
+
+            //Append all
+            webidBlock.appendChild(webidLabel);
+            webidBlock.appendChild(webidInput);
+            readBlock.appendChild(readInput);
+            readBlock.appendChild(readLabel);
+            writeBlock.appendChild(writeInput);
+            writeBlock.appendChild(writeLabel);
+            controlBlock.appendChild(controlInput);
+            controlBlock.appendChild(controlLabel);
+            permBlock.appendChild(readBlock);
+            permBlock.appendChild(writeBlock);
+            permBlock.appendChild(controlBlock);
+            deleteBlock.appendChild(deleteBtn);
+            newPerm.appendChild(webidBlock);
+            newPerm.appendChild(permBlock);
+            newPerm.appendChild(deleteBlock);
+
+            this.permBlockList.appendChild(newPerm);
+
+            this.line++;
         }
 
-        addNewInputLine(){
-            let newLine = this.permForm.cloneNode(true);
-
-            this.permForm.querySelector('input[type=text]').value = "";
-            let oldCheckbox = this.permForm.querySelectorAll('input[type=checkbox]');
-            oldCheckbox.forEach((val) => {
-                val.checked = false;
-            })
-
-            let btn = newLine.querySelector('button');
-            btn.innerText = "Edit";
-            this.fnc = this.editInputLine.bind(this);
-            btn.addEventListener('click', this.fnc);
-            newLine.querySelector('input[type=text]').setAttribute("disabled", true);
-            let checkbox = newLine.querySelectorAll('input[type=checkbox]');
-            checkbox.forEach((val) => {
-                val.setAttribute("disabled", true);
-            })
-
-            this.permBlock.appendChild(newLine);
+        addNewPerm(){
+            this.createPermLine();
         }
 
-        editInputLine(ev){
-            let block = ev.target.parentNode;
-            let btn = block.querySelector('button');
-            let webidInput = block.querySelector('input[type=text]');
-            let webid = webidInput.value
-            let checkbox = block.querySelectorAll('input[type=checkbox]');
-            let permissions = this.permList[webid];
-            delete this.permList[webid];  
-            btn.innerText = "OK";
-            webidInput.removeAttribute("disabled");
-            checkbox.forEach((val) => {
-                val.removeAttribute("disabled");
-            })
-
-            btn.removeEventListener('click', this.fnc);
-
-            btn.addEventListener('click', ev => this.confirmEditInputLine(block, webid));
+        deletePermLine(ev){
+            ev.target.parentNode.parentNode.remove();
         }
 
-        confirmEditInputLine(block, oldWebid){
-            let webidInput = block.querySelector('input[type=text]');
-            let webid = webidInput.value;
-            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked');
-            let permArr = [];
-            let permObj = {};
-            let exist = 0;
+        getPermList(){
+            let permLines = this.permBlockList.querySelectorAll('.permLine');
+            let permList = {};
+            let aclPermList = this.permissions.permList;
 
-            for(let i = 0; i < permissions.length; i++){
-                permArr.push(permissions[i].id)
+            if (permLines.length == 0){
+                return permList;
             }
-            permObj['permissions'] = permArr;
-            for (const webid_ in this.permList) {
-                if (this.permList.hasOwnProperty(webid_) && webid_ === webid) {
-                    exist = 1;
-                }
+            for(let i = 0; i < permLines.length; i++){
+                let webid = permLines[i].querySelector('input[type=text]').value;
+                let permissions = [];
+                let checkInputs = permLines[i].querySelectorAll('input[type=checkbox]:checked');
+                checkInputs.forEach((checkbox) => {
+                    let perm = checkbox.getAttribute('name');
+                    if (perm !== "Write" && perm != "Read" && perm != "Control"){
+                        throw new Error("Invalid permission");
+                    }
+                    permissions.push(checkbox.getAttribute('name'));
+                })
+                permList[webid] = permissions;
             }
-            if (exist === 0 && permArr.length !== 0 && webid){
-                this.permList[webid] = permObj;              
-                console.log('this.permLists :', this.permList);
-            }
+            return permList;
         }
 
         submit(){
             let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
             let ret = {};
 
+            let permList = this.getPermList();
+            console.log('permList :', permList);
             let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
             for(let i = 0; i < dataForm.length; i++){
                 if (dataForm[i].value && dataForm[i].value != "")
-                ret[dataForm[i].name] = dataForm[i].value;
+                    ret[dataForm[i].name] = dataForm[i].value;
             }
             if (ret['name'] && ret['name'] != ""){
                 if (!uri || uri == "" && !this.isEmpty(ret)){
