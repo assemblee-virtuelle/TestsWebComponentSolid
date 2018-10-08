@@ -26,7 +26,8 @@
         }
         .delete{
             cursor: pointer;
-        }        
+        }
+
         
     </style>
     <div id="list">
@@ -43,7 +44,8 @@
             });
             const instance = planet_permissions_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
-            this.permList = this.shadowRoot.getElementById("list");
+            this.permBlockList = this.shadowRoot.getElementById("list");
+            this.permList = {};
         }
 
         connectedCallback(){
@@ -90,7 +92,7 @@
         }
 
         populatePermList(data){
-            this.permList.innerHTML = "";
+            this.permBlockList.innerHTML = "";
             for(const group in data){
                 if (data.hasOwnProperty(group)){
                     const element = data[group];
@@ -99,6 +101,7 @@
                         for(let j = 0; j < element['permissions'].length; j++){
                             perm.push(this.permissionFromUri(element['permissions'][j]));
                         }
+                        this.permList[element[i]] = perm;
                         this.newLine(element[i], perm);
                     }
                 }
@@ -180,7 +183,7 @@
             mainDiv.appendChild(webidDiv);
             mainDiv.appendChild(permDiv);
 
-            this.permList.appendChild(mainDiv);
+            this.permBlockList.appendChild(mainDiv);
         }
 
         permissionFromUri(perm){
@@ -209,7 +212,7 @@
         attributeChangedCallback(name, oldValue, newValue) {
             if (newValue != null && name == 'data-acl'){
 
-                this.permList.innerHTML = "";
+                this.permBlockList.innerHTML = "";
                 this.postal.publish({
                     channel:'permissions',
                     topic:'urichange',
