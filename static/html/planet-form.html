@@ -205,36 +205,14 @@
             ev.target.parentNode.parentNode.remove();
         }
 
-<<<<<<< HEAD
-        confirmEditInputLine(block, oldWebid){
-            let webidInput = block.querySelector('input[type=text]');
-            let webid = webidInput.value;
-            let permissions = block.querySelectorAll('input[type=checkbox]:checked');
-            let permArr = [];
-            let permObj = {};
-            let exist = 0;
-=======
         getPermList(){
             let permLines = this.permBlockList.querySelectorAll('.permLine');
             let permList = {};
             let aclPermList = this.permissions.permList;
->>>>>>> 9c9663e86c2f5c85d1e2ffc22bb2b047b2d3894d
 
             if (permLines.length == 0){
                 return permList;
             }
-<<<<<<< HEAD
-            permObj['permissions'] = permArr;
-            for (const webid_ in this.permList) {
-                if (this.permList.hasOwnProperty(webid_) && webid_ === webid) {
-                    exist = 1;
-                }
-            }
-            console.log('this.permList :', permArr);
-            if (exist === 0 && permArr.length !== 0 && webid){
-                this.permList[webid] = permObj;
-                console.log('this.permLists :', this.permList);
-=======
             for(let i = 0; i < permLines.length; i++){
                 let webid = permLines[i].querySelector('input[type=text]').value;
                 let permissions = [];
@@ -247,7 +225,6 @@
                     permissions.push(checkbox.getAttribute('name'));
                 })
                 permList[webid] = permissions;
->>>>>>> 9c9663e86c2f5c85d1e2ffc22bb2b047b2d3894d
             }
             return permList;
         }
