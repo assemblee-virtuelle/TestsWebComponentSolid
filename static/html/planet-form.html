@@ -198,7 +198,7 @@
         confirmEditInputLine(block, oldWebid){
             let webidInput = block.querySelector('input[type=text]');
             let webid = webidInput.value;
-            let permissions = this.permForm.querySelectorAll('input[type=checkbox]:checked');
+            let permissions = block.querySelectorAll('input[type=checkbox]:checked');
             let permArr = [];
             let permObj = {};
             let exist = 0;
@@ -212,8 +212,9 @@
                     exist = 1;
                 }
             }
+            console.log('this.permList :', permArr);
             if (exist === 0 && permArr.length !== 0 && webid){
-                this.permList[webid] = permObj;              
+                this.permList[webid] = permObj;
                 console.log('this.permLists :', this.permList);
             }
         }

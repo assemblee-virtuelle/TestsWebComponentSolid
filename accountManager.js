@@ -38,8 +38,15 @@ class AccountManager{
             method:'GET',
             headers: {'Content-type': 'text/turtle'}
         })
-        .then(res => res.text())
+        .then(res => {
+            if (res.headers.get('Content-Type') != 'text/turtle')
+                return null;
+            return res.text()
+        })
         .then(card => {
+            if (card == null){
+                throw new Error("Card is unreachable");
+            }
             let store = $rdf.graph();
 
             $rdf.parse(card, store, webid, 'text/turtle');
