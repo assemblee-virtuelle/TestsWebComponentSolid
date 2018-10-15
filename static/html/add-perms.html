@@ -71,16 +71,18 @@ let addPermsTmpl = document.currentScript.ownerDocument.getElementById('addPerms
             }
             for(let i = 0; i < permLines.length; i++){
                 let webid = permLines[i].querySelector('input[type=text]').value;
-                let permissions = [];
                 let checkInputs = permLines[i].querySelectorAll('input[type=checkbox]:checked');
-                checkInputs.forEach((checkbox) => {
-                    let perm = checkbox.getAttribute('name');
-                    if (perm !== "Write" && perm != "Read" && perm != "Control"){
-                        throw new Error("Invalid permission");
-                    }
-                    permissions.push(checkbox.getAttribute('name'));
-                })
-                permList[webid] = permissions;
+                if (webid && checkInputs && checkInputs.length != 0){
+                    let permissions = [];
+                    checkInputs.forEach((checkbox) => {
+                        let perm = checkbox.getAttribute('name');
+                        if (perm !== "Write" && perm != "Read" && perm != "Control"){
+                            throw new Error("Invalid permission");
+                        }
+                        permissions.push(checkbox.getAttribute('name'));
+                    })
+                    permList[webid] = permissions;
+                }
             }
             return permList;
         }

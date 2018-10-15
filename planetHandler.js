@@ -25,7 +25,8 @@ class PlanetHandler{
         this.store = $rdf.graph();
         this.planetCount = 0;
         this.planetList = {};
-        this.planetFolderAcl = {};
+        this.planetFolderAcl = [];
+        this.planetFolderAclStore = null;
     }
 
     //Load the planet List from distant turtle file and parses it into an array
@@ -46,7 +47,6 @@ class PlanetHandler{
                                 this.planetList[list[i].uri] = list[i];
                         }
                     }
-                    this.planetFolderAcl = {};
                     resolve({list:this.planetList, listUri:this.pathToList, uri:this.account.uri});
                 });
             })
@@ -187,6 +187,7 @@ class PlanetHandler{
                                 resolve();
                             }
                         })
+                        .then(() => resolve())
                         .catch(err => reject(err));
                     }
                 }
@@ -329,6 +330,7 @@ class PlanetHandler{
         let ret = {};
         let webIdList = [];
 
+
         $rdf.parse(triples, store, uri, 'text/turtle');
         let groupList = store.statementsMatching(undefined, RDF('type'), ACL('Authorization'));
         if (groupList != null){
@@ -388,12 +390,13 @@ class PlanetHandler{
             .then(res => res.text())
             .then(triples => {
                 let parsed = this.parsePlanetAcl(triples, aclUri);
-                if (uri != this.planetList){
+                if (uri && uri != this.pathToList){
                     this.planetList[uri].hasAcl = true;
                     this.planetList[uri].aclStore = parsed.store;
                     this.planetList[uri].webids = parsed.webIds;
                 } else {
-                    this.planetFolderAcl.webids = parsed.webIds;
+                    this.planetFolderAcl = parsed.webIds;
+                    this.planetFolderAclStore = parsed.store;
                 }
                 callback(parsed.permissions);
             })
@@ -418,7 +421,7 @@ class PlanetHandler{
                 if(res.status == 200){
                     if (data.uri != this.pathToList){
                         this.planetList[data.uri].hasAcl = true;
-                    } 
+                    }
                     resolve();
                 } else {
                     reject(res.status);
@@ -433,7 +436,6 @@ class PlanetHandler{
         let resource = data.uri;
         let query = `INSERT {`;
 
-        console.log('resource :', resource);
         if(!this.planetList[resource] || !this.planetList[resource].hasAcl){
             query += `${$rdf.sym(resource + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
             ${ACL('agent')} ${$rdf.sym(this.account.webid)};
@@ -442,8 +444,8 @@ class PlanetHandler{
         }
         let i = 0;
         for (const webid in permissions) {
-            if (permissions.hasOwnProperty(webid) && (this.planetList[resource]
-                && !this.planetList[resource]['webids'].includes(webid)) || (!this.planetFolderAcl['webids'].includes(webid))) {
+            if (permissions.hasOwnProperty(webid) && (this.planetList[resource] && this.planetList[resource]['webids'] && !this.planetList[resource]['webids'].includes(webid))
+                || (this.planetFolderAcl && !this.planetFolderAcl.includes(webid))) {
                 const permArr = permissions[webid];
                 query += `${$rdf.sym(resource + "#id" + (new Date()).getTime() + i)} ${RDF('type')} ${ACL('Authorization')};\n`;
                 query += `${ACL('agent')} ${$rdf.sym(webid)};\n`;
@@ -461,6 +463,9 @@ class PlanetHandler{
     deletePerm(data, callback){
 
         let parsed = this.parseDeleteToSparql(data);
+        if (!data.acl){
+            data.acl = ".acl"; //TODO: remove this ugly hack
+        }
         this.account.fetch(this.pathToList + data.acl, {
             method:'PUT',
             headers: {'Content-Type':'text/turtle'},
@@ -475,7 +480,12 @@ class PlanetHandler{
     }
 
     parseDeleteToSparql(data){
-        let aclStore = this.planetList[data.uri].aclStore;
+        let aclStore = null;
+        if (data.uri){
+            aclStore = this.planetList[data.uri].aclStore;
+        } else {
+            aclStore = this.planetFolderAclStore;
+        }
         let subjList = aclStore.statementsMatching(undefined, ACL('agent'), $rdf.sym(data.webid));
         for(let i = 0; i < subjList.length; i++){
             let deletions = aclStore.connectedStatements($rdf.sym(subjList[i].subject.value));
@@ -485,18 +495,29 @@ class PlanetHandler{
         return query;
     }
 
-
     //Fetches the planet list 
     fetchPlanetList(){
         return new Promise((resolve, reject) => {
             this.hasPlanetList().then(res => {
-                this.account.fetch('https://savincen.localhost:8443/PlanetList', {
+                this.account.fetch(this.pathToList, {
                     method: 'GET',
                     headers: {'Content-type':'text/turtle'}
                 })
                 .then(res => res.text())
                 .then(rawList => {
                     let planetList = this.getTurtlesFiles(rawList);
+                    this.fetchPermissions({uri:this.pathToList, acl:'.acl'}, parsed => {
+                        console.log('parsed :', parsed);
+                        if (parsed){
+                            this.postal.publish({
+                                channel:'permissions',
+                                topic:'sendPermissionList',
+                                data:parsed
+                            });
+                        } else {
+                            console.log("no specific acl file for this resource");
+                        }
+                    })
                     resolve(planetList);
                 })
                 .catch(err => {

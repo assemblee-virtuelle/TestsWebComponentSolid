@@ -93,6 +93,7 @@
             this.shadowRoot.appendChild(instance);
             this.table = this.shadowRoot.getElementById("tab");
             this.listName = this.shadowRoot.getElementById("listName");
+            this.permissions = this.shadowRoot.querySelector('planet-permissions');
             this.addPerms = this.shadowRoot.querySelector('add-perms');
             this.addPermsBtn = this.shadowRoot.getElementById("addPermsButton");
         }
@@ -138,6 +139,7 @@
 
         setPostal(){
             this.postal = postal;
+            this.permissions.setPostal(postal);
         }
 
         generateList(data){

@@ -182,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             channel:'planet',
             topic:'formCancel',
             callback: (data, enveloppe) => {
+                loadList();
                 switchToList();
             }
         })

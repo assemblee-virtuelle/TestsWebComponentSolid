@@ -103,6 +103,7 @@
                     for(let j = 0; j < element['permissions'].length; j++){
                         perm.push(this.permissionFromUri(element['permissions'][j]));
                     }
+                    
                     this.permList[element['webid']] = perm;
                     this.newLine(element['webid'], perm);
                 }
