@@ -51,5 +51,6 @@ module.exports = {
     'whatwg-url': 'window',
     '@trust/webcrypto': 'crypto'
   },
-  mode:'development'
+  mode:'development',
+  watch:true
 };

@@ -13,7 +13,6 @@
 
     <planet-list></planet-list>
     <planet-form class="hidden"></planet-form>
-
 </template>
 <script>
     const planetInterfaceTmpl = document.currentScript.ownerDocument.querySelector("#tmpl-planetInterface");
@@ -53,7 +52,9 @@
                     this.planetForm.className = "shown";
                     if (data != null){
                         this.planetForm.setFormData(data);
+                        this.planetForm.setAttribute('data-uri', data.uri);
                     } else {
+                        this.planetForm.removeAttribute('data-uri');
                         this.planetForm.resetFormData();
                     }
                 }

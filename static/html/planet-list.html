@@ -72,6 +72,13 @@
         <div id="add">
             <img src="/images/plus.png" alt="add" />
         </div>
+        <div>
+            <add-perms></add-perms>
+            <div>
+                <button id="addPermsButton">Confirmer l'ajout des droits</button>
+            </div>
+        </div>
+        <planet-permissions></planet-permissions>
     </div>
 </template>
 <script>
@@ -86,10 +93,13 @@
             this.shadowRoot.appendChild(instance);
             this.table = this.shadowRoot.getElementById("tab");
             this.listName = this.shadowRoot.getElementById("listName");
+            this.addPerms = this.shadowRoot.querySelector('add-perms');
+            this.addPermsBtn = this.shadowRoot.getElementById("addPermsButton");
         }
 
         connectedCallback(){
             this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
+            this.addPermsBtn.addEventListener('click', this.addPermToList.bind(this))
             this.shadowRoot.getElementById("submitName").addEventListener('click', ev => {
                 this.submitName(ev);
             });
@@ -115,13 +125,27 @@
             }
         }
 
+        addPermToList(){
+            if (this.postal){
+                let list = this.addPerms.getPermList();
+                this.postal.publish({
+                    channel:'permissions',
+                    topic:'addPerms', 
+                    data:{permissions:list, uri:this.uri, acl:this.acl}
+                })
+            }
+        }
+
         setPostal(){
             this.postal = postal;
         }
 
         generateList(data){
             let list = data.list;
+            console.log('data :', data);
             this.listName.setAttribute('value', data.uri);
+            this.uri = data.listUri;
+            this.acl = '.acl';
             this.defaultName = this.listName.value;
             this.table.innerHTML = "";
             for(const key in list){

@@ -25,6 +25,7 @@ class PlanetHandler{
         this.store = $rdf.graph();
         this.planetCount = 0;
         this.planetList = {};
+        this.planetFolderAcl = {};
     }
 
     //Load the planet List from distant turtle file and parses it into an array
@@ -45,6 +46,7 @@ class PlanetHandler{
                                 this.planetList[list[i].uri] = list[i];
                         }
                     }
+                    this.planetFolderAcl = {};
                     resolve({list:this.planetList, listUri:this.pathToList, uri:this.account.uri});
                 });
             })
@@ -79,22 +81,22 @@ class PlanetHandler{
     }
 
     createPlanetListAcl(){
-        let triples = `
+        let triples = `INSERT {
         ${$rdf.sym(this.pathToList + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
         ${ACL('agent')} ${$rdf.sym(this.account.webid)};
         ${ACL('accessTo')} ${$rdf.sym(this.pathToList)};
         ${ACL('default')} ${$rdf.sym(this.pathToList)};
-        ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.
+        ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.}
         `;
         return new Promise((resolve, reject) => {
             this.account.fetch(this.pathToList + ".acl", {
-                method: 'PUT',
+                method: 'PATCH',
+                headers:{'Content-type':'application/sparql-update'},
                 body: triples
             }).then(resp => {
                 if(resp.status === 200) {
                     resolve();
                 }
-                console.log('resp :', resp);
             })
         })
     }
@@ -111,10 +113,9 @@ class PlanetHandler{
                 }
             })
             .then(res => {
-                
-                //console.log('Planet list created !');
-                this.createPlanetListAcl().then(res => resolve());
+                return this.createPlanetListAcl()
             })
+            .then(res => resolve())
             .catch(err => {
                 console.log('err creation :', err);
                 reject(err);
@@ -141,15 +142,17 @@ class PlanetHandler{
 
     //Add a new planet to the list
     addNewPlanet(data){
+        let planetInfo = data.planetInfo;
+        let permissions = data.permissions;
         return new Promise((resolve, reject) => {
-            if (data['name']){
+            if (planetInfo['name']){
                 let exists = false;
-                if (this.checkNameAvailability(data['name'])){
+                if (this.checkNameAvailability(planetInfo['name'])){
                     reject("Name already exists");
                     exists = true;
                 }
                 if(!exists){
-                    let decoded = this.decodeDataIntoTriples(data);
+                    let decoded = this.decodeDataIntoTriples(planetInfo);
                     if(decoded['triples'] && decoded['triples'] != ""){
                         this.account.fetch(this.pathToList, {
                             method: 'POST',
@@ -171,11 +174,18 @@ class PlanetHandler{
                                     inputs[PLANET(key)] = data[key];
                                 }
                             }
-                            newPlanet.inputs = inputs;
+                            newPlanet.infos = inputs; //TODO: remove ?
                             newPlanet['uri'] = uri;
                             newPlanet['store'] = decoded['store'];
                             this.planetList[uri] = newPlanet;
-                            resolve(newPlanet);
+                            return {permissions:permissions, uri:uri};
+                        })
+                        .then(data => {
+                            if (!utils.isEmpty(data.permissions)){
+                                return this.addNewPerm(data);
+                            } else {
+                                resolve();
+                            }
                         })
                         .catch(err => reject(err));
                     }
@@ -191,7 +201,6 @@ class PlanetHandler{
         return new Promise((resolve, reject) => {
             let planet = this.uriExists(uri);
             if (planet){
-                console.log("edit planet");
                 let decoded = this.decodeDataIntoTriples(data)
                 this.account.fetch(uri, {
                     method:'PUT',
@@ -221,6 +230,11 @@ class PlanetHandler{
             let planet = this.uriExists(uri);
             if (planet){
                 this.account.fetch(uri, {
+                    method:'DELETE'
+                })
+                .then(res => resolve())
+                .catch(err => reject(err));
+                this.account.fetch(uri + ".acl", {
                     method:'DELETE'
                 })
                 .then(res => resolve())
@@ -260,7 +274,6 @@ class PlanetHandler{
         this.planetCount = i;
         return tab;
     }
-
 
     //Fetches a planet from its uri
     fetchPlanet(uri){
@@ -314,28 +327,25 @@ class PlanetHandler{
     parsePlanetAcl(triples, uri){
         let store = $rdf.graph();
         let ret = {};
+        let webIdList = [];
 
         $rdf.parse(triples, store, uri, 'text/turtle');
-
-        let webids = store.statementsMatching(undefined, ACL('agent'), undefined);
-        if (webids != null){
-            let key = "";
-            let tab = [];
-            for(let i = 0; i < webids.length; i++){
-                if (webids[i].subject.value != key)
-                    tab = [];
-                if (webids[i].object.value != this.account.webid)
-                    tab.push(webids[i].object.value);
-                key = webids[i].subject.value;
-                ret[key] = tab;
-            }
-            for (const group in ret) {
-                if (ret.hasOwnProperty(group)) {
-                    let permissions = store.each($rdf.sym(group), ACL('mode'));
-                    if (permissions != null){
-                        ret[group]['permissions'] = [];
-                        for(let j = 0; j < permissions.length; j++){
-                            ret[group]['permissions'].push(permissions[j].value);
+        let groupList = store.statementsMatching(undefined, RDF('type'), ACL('Authorization'));
+        if (groupList != null){
+            for (const group in groupList) {
+                if (groupList.hasOwnProperty(group)) {
+                    let groupName = groupList[group].subject.value;
+                    let permissions = store.each($rdf.sym(groupName), ACL('mode'));
+                    let webid = store.any($rdf.sym(groupName), ACL('agent'));
+                    if (webid.value != this.account.webid){
+                        ret[groupName] = {};
+                        if (permissions && webid){
+                            ret[groupName]['permissions'] = [];
+                            for(let j = 0; j < permissions.length; j++){
+                                ret[groupName]['permissions'].push(permissions[j].value);
+                            }
+                            webIdList.push(webid.value);
+                            ret[groupName]['webid'] = webid.value;
                         }
                     }
                 }
@@ -343,7 +353,8 @@ class PlanetHandler{
         }
 
         let dataRet = {};
-        dataRet.perm = ret;
+        dataRet.webIds = webIdList;
+        dataRet.permissions = ret;
         dataRet.store = store;
         return dataRet;
     }
@@ -369,17 +380,22 @@ class PlanetHandler{
         let uri = data.uri;
         let aclUri = this.pathToList + data.acl;
         this.aclExist(aclUri)
-        .then(res => {
+        .then(() => {
             this.account.fetch(aclUri, {
                 method:'GET',
                 headers:{'Content-Type':'text/turtle'}
             })
             .then(res => res.text())
             .then(triples => {
-                let data = this.parsePlanetAcl(triples, aclUri);
-                this.planetList[uri].hasAcl = true;
-                this.planetList[uri].aclStore = data.store;
-                callback(data.perm);
+                let parsed = this.parsePlanetAcl(triples, aclUri);
+                if (uri != this.planetList){
+                    this.planetList[uri].hasAcl = true;
+                    this.planetList[uri].aclStore = parsed.store;
+                    this.planetList[uri].webids = parsed.webIds;
+                } else {
+                    this.planetFolderAcl.webids = parsed.webIds;
+                }
+                callback(parsed.permissions);
             })
         })
         .catch(err => {
@@ -391,30 +407,66 @@ class PlanetHandler{
         })
     }
 
-    addNewPerm(data, callback){
+    addNewPerm(data){
         let parsed = this.parseDataToSparql(data);
-        this.account.fetch(this.pathToList + data.acl, {
-            method:'PATCH',
-            headers: {'Content-Type':'application/sparql-update'},
-            body:parsed
-        }).then(res => {
-            if(res.status == 200){
-                this.fetchPermissions(data, parsed => {
-                    callback(parsed);
-                })
-            }
+        return new Promise((resolve, reject) => {
+            this.account.fetch(data.uri + ".acl", {
+                method:'PATCH',
+                headers: {'Content-Type':'application/sparql-update'},
+                body:parsed
+            }).then(res => {
+                if(res.status == 200){
+                    if (data.uri != this.pathToList){
+                        this.planetList[data.uri].hasAcl = true;
+                    } 
+                    resolve();
+                } else {
+                    reject(res.status);
+                }
+            })
+            .catch(err => reject(err))
         })
+    }
+
+    parseDataToSparql(data){
+        let permissions = data.permissions;
+        let resource = data.uri;
+        let query = `INSERT {`;
+
+        console.log('resource :', resource);
+        if(!this.planetList[resource] || !this.planetList[resource].hasAcl){
+            query += `${$rdf.sym(resource + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
+            ${ACL('agent')} ${$rdf.sym(this.account.webid)};
+            ${ACL('accessTo')} ${$rdf.sym(resource)};
+            ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.\n`;
+        }
+        let i = 0;
+        for (const webid in permissions) {
+            if (permissions.hasOwnProperty(webid) && (this.planetList[resource]
+                && !this.planetList[resource]['webids'].includes(webid)) || (!this.planetFolderAcl['webids'].includes(webid))) {
+                const permArr = permissions[webid];
+                query += `${$rdf.sym(resource + "#id" + (new Date()).getTime() + i)} ${RDF('type')} ${ACL('Authorization')};\n`;
+                query += `${ACL('agent')} ${$rdf.sym(webid)};\n`;
+                permArr.forEach(val => {
+                    query+= `${ACL('mode')} ${ACL(val)};\n`;
+                });
+                query += `${ACL('accessTo')} ${$rdf.sym(resource)}.\n`;
+            }
+            i++;
+        }
+        query += '}';
+        return query;
     }
 
     deletePerm(data, callback){
 
         let parsed = this.parseDeleteToSparql(data);
         this.account.fetch(this.pathToList + data.acl, {
-            method:'PATCH',
-            headers: {'Content-Type':'application/sparql-update'},
+            method:'PUT',
+            headers: {'Content-Type':'text/turtle'},
             body:parsed
         }).then(res => {
-            if(res.status == 200){
+            if(res.status == 201 || res.status == 200){
                 this.fetchPermissions(data, parsed => {
                     callback(parsed);
                 })
@@ -423,55 +475,16 @@ class PlanetHandler{
     }
 
     parseDeleteToSparql(data){
-
-        // let aclStore = this.planetList[data.uri].aclStore;
-        // console.log('data.webid :', data.webid);
-        // let subjList = aclStore.statementsMatching(undefined, ACL('agent'), $rdf.sym(data.webid));
-        // console.log('aclStore :', aclStore);
-
-        // console.log('subjList :', subjList);
-        // for(let i = 0; i < subjList.length; i++){
-        //     console.log(subjList[i].subject.value);
-        //     aclStore.remove($rdf.sym(subjList[i].subject.value), ACL('agent'), $rdf.sym(data.webid));
-
-        // }
-        let query = `DELETE {?subject ${ACL('agent')} ${$rdf.sym(data.webid)}}
-        WHERE {
-            ?subject ${ACL('agent')} ${$rdf.sym(data.webid)}
-        }`;
-        return query;
-    }
-
-    parseDataToSparql(data){
-        let webid = data.webid;
-        let resource = data.uri;
-        let perm = data.perm;
-        let subj = 1;
-
-        let query = `INSERT {`;
-        if(this.planetList[resource].hasAcl == true){
-            let test = this.planetList[resource].aclStore.each(undefined, RDF('type'),ACL('Authorization'));
-            console.log('test :', test);
-            subj = test.length + 1;
-        } else {
-            query += `${$rdf.sym(resource + "#Owner")} ${RDF('type')} ${ACL('Authorization')};
-            ${ACL('agent')} ${$rdf.sym(this.account.webid)};
-            ${ACL('accessTo')} ${$rdf.sym(resource)};
-            ${ACL('mode')} ${ACL('Read')}, ${ACL('Write')}, ${ACL('Control')}.}`
+        let aclStore = this.planetList[data.uri].aclStore;
+        let subjList = aclStore.statementsMatching(undefined, ACL('agent'), $rdf.sym(data.webid));
+        for(let i = 0; i < subjList.length; i++){
+            let deletions = aclStore.connectedStatements($rdf.sym(subjList[i].subject.value));
+            aclStore.remove(deletions);
         }
-
-        query += `INSERT { ${$rdf.sym(resource + "#id" + subj)} ${RDF('type')} ${ACL('Authorization')};`;
-        // if (this.planetList[resource].hasAcl == false){
-        //     console.log("acl not set");
-        //     query += `${ACL('agent')} ${$rdf.sym(this.account.webid)} ;`;
-        // }
-        query += `${ACL('agent')} ${$rdf.sym(webid)};`;
-        perm.forEach(val => {
-            query+= `${ACL('mode')} ${ACL(val)};`;
-        });
-        query += `${ACL('accessTo')} ${$rdf.sym(resource)}.}`;
+        let query = $rdf.serialize(null, aclStore, this.planetList + data.acl, 'text/turtle');
         return query;
     }
+
 
     //Fetches the planet list 
     fetchPlanetList(){

@@ -87,7 +87,7 @@ class AccountManager{
         async function loginToSolid(idp) {
             const session = await auth.currentSession();
             if (!session)
-                await auth.login(idp);
+                await auth.login(idp, {callbackUri:'https://localhost:8000'});
             else
                 console.log('Logged in as ', session.webId);
         }

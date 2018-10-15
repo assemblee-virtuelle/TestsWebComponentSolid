@@ -27,26 +27,16 @@
             border: 2px dashed #2bc4d4;
         }
 
-        .checkboxDiv{
-            display:flex;
+        .hidden{
+            display:none;
         }
 
-        .webidDiv{
-            background-color:cornsilk;
-        }
-
-        .webidDiv > input{
-            width:250px;
-        }
-
-        .permLine{
-            display: flex;
-            width: 70%;
+        #servPermDiv{
+            width:80%;
             margin: 0 auto;
-            justify-content: space-evenly;
-            margin-top: 5px;
-            margin-bottom: 5px;
+            margin-top:15px;
         }
+
     </style>
 
     <h1 class="title">Informations de la planète</h1>
@@ -73,18 +63,17 @@
             </div>
         </form>
     </div>
-    <h2>Add permissions</h2>
-    <div id="perms">
-        <div id="permList">
-        </div>
-        <button id="addNewPermBtn">New Permission</button>
+    <div>
+        <add-perms></add-perms>
     </div>
-
-    <h1>Permissions</h1>
-    <planet-permissions></planet-permissions>
+    <div id="servPermDiv" class="hidden">
+        <button id="toPermListBtn">&darr; Ajouter à la liste &darr;</button>
+        <h2>Liste des Permissions</h2>
+        <planet-permissions></planet-permissions>
+    </div>
 </template>
 <script>
-    let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');;
+    let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');
     class PlanetForm extends HTMLElement {
         constructor(){
             super();
@@ -97,15 +86,13 @@
             this.cancelBtn = this.shadowRoot.getElementById("cancel");
             this.submitBtn = this.shadowRoot.getElementById("btn_submit");
             this.permissions = this.shadowRoot.querySelector('planet-permissions');
-            this.addBtn = this.shadowRoot.getElementById("addNewPermBtn");
-            this.permBlockList = this.shadowRoot.getElementById("permList");
-            this.line = 0;
-            this.permList = {};
+            this.servPermDiv = this.shadowRoot.getElementById("servPermDiv");
+            this.addPerms = this.shadowRoot.querySelector('add-perms');
+            this.toPermListBtn = this.shadowRoot.getElementById("toPermListBtn");
         }
 
         connectedCallback(){
-            this.createPermLine();
-            this.addBtn.addEventListener('click', this.addNewPerm.bind(this));
+            this.toPermListBtn.addEventListener('click', this.addPermToList.bind(this));
             this.submitBtn.addEventListener("click", e => {
                 e.preventDefault();
                 this.submit();
@@ -121,120 +108,46 @@
             }
         }
 
-        createPermLine(){
-            //Principal block
-            let newPerm = document.createElement('div');
-            newPerm.id = "newPerm" + this.line;
-            newPerm.className = "permLine";
-
-            //WebID input block
-            let webidBlock = document.createElement('div');
-            let webidLabel = document.createElement('label');
-            let webidInput = document.createElement('input');
-            webidBlock.className = "webidDiv";
-            webidLabel.setAttribute('for', 'webidInput' + this.line);
-            webidLabel.innerText = "WebID:"
-            webidInput.setAttribute('type', 'text');
-            webidInput.id = 'webidInput' + this.line;
-            
-            //Permissions input block
-            let permBlock = document.createElement('div');
-            let readBlock = document.createElement('div');
-            let writeBlock = document.createElement('div');
-            let controlBlock = document.createElement('div');
-            let readInput = document.createElement('input');
-            let readLabel = document.createElement('label');
-            let writeInput = document.createElement('input');
-            let writeLabel = document.createElement('label');
-            let controlInput = document.createElement('input');
-            let controlLabel = document.createElement('label');
-            permBlock.className = "checkboxDiv";
-            readBlock.className = "readDiv";
-            readInput.id = "read" + this.line;
-            readInput.setAttribute('type', 'checkbox');
-            readInput.setAttribute('name', 'Read');
-            readLabel.setAttribute('for', 'read' + this.line);
-            readLabel.innerText = "Read";
-            writeBlock.className = "writeDiv";
-            writeInput.id = "write" + this.line;
-            writeInput.setAttribute('type', 'checkbox');
-            writeInput.setAttribute('name', 'Write');
-            writeLabel.setAttribute('for', 'write' + this.line);
-            writeLabel.innerText = "Write";
-            controlBlock.className = "controlDiv";
-            controlInput.setAttribute('type', 'checkbox');
-            controlInput.id = "control" + this.line;
-            controlInput.setAttribute('name', 'Control');
-            controlLabel.setAttribute('for', 'control' + this.line);
-            controlLabel.innerText = "Control";
-
-            //Delete btn or img
-            let deleteBlock = document.createElement('div');
-            let deleteBtn = document.createElement('button');
-            deleteBtn.className = "deleteBtn";
-            deleteBtn.innerText = "Delete";
-            deleteBtn.addEventListener('click', this.deletePermLine.bind(this));
-
-            //Append all
-            webidBlock.appendChild(webidLabel);
-            webidBlock.appendChild(webidInput);
-            readBlock.appendChild(readInput);
-            readBlock.appendChild(readLabel);
-            writeBlock.appendChild(writeInput);
-            writeBlock.appendChild(writeLabel);
-            controlBlock.appendChild(controlInput);
-            controlBlock.appendChild(controlLabel);
-            permBlock.appendChild(readBlock);
-            permBlock.appendChild(writeBlock);
-            permBlock.appendChild(controlBlock);
-            deleteBlock.appendChild(deleteBtn);
-            newPerm.appendChild(webidBlock);
-            newPerm.appendChild(permBlock);
-            newPerm.appendChild(deleteBlock);
-
-            this.permBlockList.appendChild(newPerm);
-
-            this.line++;
+        static get observedAttributes(){
+            return ['data-uri'];
         }
 
-        addNewPerm(){
-            this.createPermLine();
+        get uri(){
+            return this.getAttribute('data-uri');
         }
 
-        deletePermLine(ev){
-            ev.target.parentNode.parentNode.remove();
-        }
-
-        getPermList(){
-            let permLines = this.permBlockList.querySelectorAll('.permLine');
-            let permList = {};
-            let aclPermList = this.permissions.permList;
-
-            if (permLines.length == 0){
-                return permList;
+        set uri(_uri){
+            if (_uri){
+                this.setAttribute('data-uri', _uri);
             }
-            for(let i = 0; i < permLines.length; i++){
-                let webid = permLines[i].querySelector('input[type=text]').value;
-                let permissions = [];
-                let checkInputs = permLines[i].querySelectorAll('input[type=checkbox]:checked');
-                checkInputs.forEach((checkbox) => {
-                    let perm = checkbox.getAttribute('name');
-                    if (perm !== "Write" && perm != "Read" && perm != "Control"){
-                        throw new Error("Invalid permission");
-                    }
-                    permissions.push(checkbox.getAttribute('name'));
+        }
+
+        attributeChangedCallback(name, oldValue, newValue){
+            if (name == 'data-uri'){
+                if (newValue == null){
+                    this.servPermDiv.className = "hidden";
+                } else {
+                    console.log('newValue :', newValue);
+                    this.servPermDiv.className = "";
+                }
+            }
+        }
+
+        addPermToList(){
+            if (this.postal){
+                let list = this.addPerms.getPermList();
+                this.postal.publish({
+                    channel:'permissions',
+                    topic:'addPerms', 
+                    data:{permissions:list, uri:this.uri, acl:this.acl}
                 })
-                permList[webid] = permissions;
             }
-            return permList;
         }
 
         submit(){
             let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
             let ret = {};
 
-            let permList = this.getPermList();
-            console.log('permList :', permList);
             let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
             for(let i = 0; i < dataForm.length; i++){
                 if (dataForm[i].value && dataForm[i].value != "")
@@ -242,10 +155,11 @@
             }
             if (ret['name'] && ret['name'] != ""){
                 if (!uri || uri == "" && !this.isEmpty(ret)){
+                    let permList = this.addPerms.getPermList();
                     this.postal.publish({
                         channel:'planet',
                         topic:'addNewConfirm',
-                        data:ret
+                        data:{planetInfo:ret, permissions:permList}
                     })
                 } else {
                     let _data = {};
@@ -283,15 +197,18 @@
         }
 
         setPostal(postal){
-            this.permissions.setPostal(postal);
             this.postal = postal;
+            this.permissions.setPostal(postal);
+            this.addPerms.setPostal(postal);
         }
 
         setFormData(data){
             if (data.uri){
                 this.resetFormData();
                 this.permissions.setAttribute('data-uri', data.uri);
-                this.permissions.setAttribute('data-acl', data.acl); //Note: Take care of the call order because of attributeChangedCallback on planet-permissions.html
+                this.uri = data.uri;
+                this.acl = data.acl;
+                this.permissions.setAttribute('data-acl', data.acl); //TODO: Change this Take care of the call order because of attributeChangedCallback on planet-permissions.html
                 for(const fieldName in data.inputs){
                     if (data.inputs.hasOwnProperty(fieldName)){
                         this.inputList[fieldName].value = data.inputs[fieldName];
@@ -306,16 +223,11 @@
         resetFormData(){
             for(const field in this.inputList){
                 if (this.inputList.hasOwnProperty(field)){
-
                     this.inputList[field].value = "";
                 }
             }
         }
 
-        setPostalChannels(){
-
-        }
-        
     }
     window.customElements.define("planet-form", PlanetForm);
 </script>

@@ -89,23 +89,22 @@ document.addEventListener('DOMContentLoaded', () => {
             channel:'interface',
             topic:'changeList',
             callback: (uri => {
-                console.log("loading list");
                 PH.listPath(uri);
                 loadList();
             })
         })
         postal.subscribe({
             channel:'permissions',
-            topic:'addNewPerm',
+            topic:'addPerms',
             callback:(data => {
-                PH.addNewPerm(data, parsed => {
-                    if(parsed){
+                PH.addNewPerm(data).then(() => {
+                    PH.fetchPermissions(data, (perms) => {
                         postal.publish({
                             channel:'permissions',
                             topic:'sendPermissionList',
-                            data:parsed
+                            data:perms
                         });
-                    }
+                    });
                 })
             })
         })
