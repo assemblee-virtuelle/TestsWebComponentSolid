@@ -27,7 +27,7 @@ module.exports = {
     extensions: ['.json', '.js', '.jsx', '.css']
   },
   plugins: [
-    new CleanWebpackPlugin(['static/compiledJs']),
+    new CleanWebpackPlugin(['static/compiledJs'], {watch:true}),
     new HtmlWebpackPlugin({
       title: 'Caching',
       template: 'static/html/index.html'
