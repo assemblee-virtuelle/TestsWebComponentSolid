@@ -1,21 +1,21 @@
 {
-  "name": "webcsolidtests",
+  "name": "testswebcomponentsolid",
   "version": "1.0.0",
   "description": "",
-  "main": "script.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PulsarFox/WebCtests.git"
+    "url": "git+https://github.com/assemblee-virtuelle/TestsWebComponentSolid.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/PulsarFox/WebCtests/issues"
+    "url": "https://github.com/assemblee-virtuelle/TestsWebComponentSolid/issues"
   },
-  "homepage": "https://github.com/PulsarFox/WebCtests#readme",
+  "homepage": "https://github.com/assemblee-virtuelle/TestsWebComponentSolid#readme",
   "dependencies": {
     "@trust/oidc-web": "^0.2.1",
     "@webcomponents/webcomponentsjs": "^2.1.3",

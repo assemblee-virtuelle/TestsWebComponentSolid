@@ -29,15 +29,22 @@
             border-collapse:collapse;
             text-align:center;
         }
-        #add > img{
+        #add > div > img{
             width:50px;
             height:50px;
         }
         #add{
-            margin-top: 10px;
-            display:inline-block;
             cursor: pointer;
-            width:fit-content;
+            width: 30%;
+            justify-content: center;
+            text-align: center;
+            border-radius: 25px;
+            display: flex;
+            margin: 0 auto;
+            transition:1s;
+        }
+        #add:hover{
+            background-color:rgb(135, 191, 103);
         }
         .imgblock{
             width:fit-content;
@@ -48,6 +55,19 @@
         }
         #listName{
             width:270px;
+        }
+        .permslist{
+            width:80%;
+            text-align:center;
+            margin:0 auto;
+        }
+        .flexLineContainer{
+            display:flex;
+            flex-direction:column;
+        }
+        .addpermsDiv{
+            margin:0 auto;
+            width:80%;
         }
     </style>
 
@@ -70,15 +90,16 @@
             </tbody>
         </table>
         <div id="add">
-            <img src="/images/plus.png" alt="add" />
-        </div>
-        <div>
-            <add-perms></add-perms>
             <div>
-                <button id="addPermsButton">Confirmer l'ajout des droits</button>
+                <img src="/images/plus.png" alt="add" />
+            </div>
+            <div>
+                Ajouter une nouvelle planète
+            </div>
+            <div>
+                <img src="/images/plus.png" alt="add" />
             </div>
         </div>
-        <planet-permissions></planet-permissions>
     </div>
 </template>
 <script>
@@ -93,14 +114,12 @@
             this.shadowRoot.appendChild(instance);
             this.table = this.shadowRoot.getElementById("tab");
             this.listName = this.shadowRoot.getElementById("listName");
-            this.permissions = this.shadowRoot.querySelector('planet-permissions');
             this.addPerms = this.shadowRoot.querySelector('add-perms');
             this.addPermsBtn = this.shadowRoot.getElementById("addPermsButton");
         }
 
         connectedCallback(){
             this.shadowRoot.getElementById("add").addEventListener("click", this.onAddClick.bind(this));
-            this.addPermsBtn.addEventListener('click', this.addPermToList.bind(this))
             this.shadowRoot.getElementById("submitName").addEventListener('click', ev => {
                 this.submitName(ev);
             });
@@ -126,28 +145,14 @@
             }
         }
 
-        addPermToList(){
-            if (this.postal){
-                let list = this.addPerms.getPermList();
-                this.postal.publish({
-                    channel:'permissions',
-                    topic:'addPerms', 
-                    data:{permissions:list, uri:this.uri, acl:this.acl}
-                })
-            }
-        }
-
         setPostal(){
             this.postal = postal;
-            this.permissions.setPostal(postal);
         }
 
         generateList(data){
             let list = data.list;
             console.log('data :', data);
             this.listName.setAttribute('value', data.uri);
-            this.uri = data.listUri;
-            this.acl = '.acl';
             this.defaultName = this.listName.value;
             this.table.innerHTML = "";
             for(const key in list){

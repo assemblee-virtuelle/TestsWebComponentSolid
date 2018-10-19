@@ -4,7 +4,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   entry: {
-    'compiledJs/main':'./main.js'
+    'compiledJs/main': './lib/main.js'
   },
   output: {
     filename: '[name].[chunkhash].js',
@@ -27,7 +27,7 @@ module.exports = {
     extensions: ['.json', '.js', '.jsx', '.css']
   },
   plugins: [
-    new CleanWebpackPlugin(['static/compiledJs'], {watch:true}),
+    new CleanWebpackPlugin(['static/compiledJs']),
     new HtmlWebpackPlugin({
       title: 'Caching',
       template: 'static/html/index.html'

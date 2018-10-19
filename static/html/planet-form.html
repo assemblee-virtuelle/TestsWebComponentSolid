@@ -63,14 +63,6 @@
             </div>
         </form>
     </div>
-    <div>
-        <add-perms></add-perms>
-    </div>
-    <div id="servPermDiv" class="hidden">
-        <button id="toPermListBtn">&darr; Ajouter à la liste &darr;</button>
-        <h2>Liste des Permissions</h2>
-        <planet-permissions></planet-permissions>
-    </div>
 </template>
 <script>
     let planet_form_template = document.currentScript.ownerDocument.getElementById('planet-form');
@@ -85,14 +77,10 @@
             this.planetForm = this.shadowRoot.getElementById("planetForm");
             this.cancelBtn = this.shadowRoot.getElementById("cancel");
             this.submitBtn = this.shadowRoot.getElementById("btn_submit");
-            this.permissions = this.shadowRoot.querySelector('planet-permissions');
             this.servPermDiv = this.shadowRoot.getElementById("servPermDiv");
-            this.addPerms = this.shadowRoot.querySelector('add-perms');
-            this.toPermListBtn = this.shadowRoot.getElementById("toPermListBtn");
         }
 
         connectedCallback(){
-            this.toPermListBtn.addEventListener('click', this.addPermToList.bind(this));
             this.submitBtn.addEventListener("click", e => {
                 e.preventDefault();
                 this.submit();
@@ -124,23 +112,7 @@
 
         attributeChangedCallback(name, oldValue, newValue){
             if (name == 'data-uri'){
-                if (newValue == null){
-                    this.servPermDiv.className = "hidden";
-                } else {
-                    
-                    this.servPermDiv.className = "";
-                }
-            }
-        }
-
-        addPermToList(){
-            if (this.postal){
-                let list = this.addPerms.getPermList();
-                this.postal.publish({
-                    channel:'permissions',
-                    topic:'addPerms', 
-                    data:{permissions:list, uri:this.uri, acl:this.acl}
-                })
+                //TODO: something
             }
         }
 
@@ -148,18 +120,17 @@
             let dataForm = this.planetForm.querySelectorAll('input:not([name="uri"])');
             let ret = {};
 
-            let uri = this.shadowRoot.querySelector('input[name="uri"]').value;
+            let uri = this.uri;
             for(let i = 0; i < dataForm.length; i++){
                 if (dataForm[i].value && dataForm[i].value != "")
                     ret[dataForm[i].name] = dataForm[i].value;
             }
-            if (ret['name'] && ret['name'] != ""){
+            if (ret['name'] && ret['name'] != ""){//TODO:rework this
                 if (!uri || uri == "" && !this.isEmpty(ret)){
-                    let permList = this.addPerms.getPermList();
                     this.postal.publish({
                         channel:'planet',
                         topic:'addNewConfirm',
-                        data:{planetInfo:ret, permissions:permList}
+                        data:{planetInfo:ret}
                     })
                 } else {
                     let _data = {};
@@ -198,23 +169,17 @@
 
         setPostal(postal){
             this.postal = postal;
-            this.permissions.setPostal(postal);
-            this.addPerms.setPostal(postal);
         }
 
         setFormData(data){
             if (data.uri){
                 this.resetFormData();
-                this.permissions.setAttribute('data-uri', data.uri);
                 this.uri = data.uri;
-                this.acl = data.acl;
-                this.permissions.setAttribute('data-acl', data.acl); //TODO: Change this Take care of the call order because of attributeChangedCallback on planet-permissions.html
                 for(const fieldName in data.inputs){
                     if (data.inputs.hasOwnProperty(fieldName)){
                         this.inputList[fieldName].value = data.inputs[fieldName];
                     }
                 }
-                this.shadowRoot.querySelector('input[name="uri"]').value = data.uri;
             } else {
                 console.log("no uri set");
             }

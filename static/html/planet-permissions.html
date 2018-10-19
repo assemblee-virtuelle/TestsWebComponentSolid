@@ -33,6 +33,30 @@
 
         
     </style>
+    <h2>Liste des Permissions</h2>
+    <div id="newPermForm">
+        <div id="webidDiv">
+            <label for="webidInput">WebID:</label>
+            <input type="text" name="webid" id="webidInput">
+        </div>
+        <div id="checkboxDiv">
+            <div id="checkRead">
+                <input type="checkbox" name="Read" id="inputRead">
+                <label for="inputRead">Read</label>
+            </div>
+            <div id="checkWrite">
+                <input type="checkbox" name="Write" id="inputWrite">
+                <label for="inputWrite">Write</label>
+            </div>
+            <div id="checkControl">
+                <input type="checkbox" name="Control" id="inputControl">
+                <label for="inputControl">Control</label>
+            </div>
+        </div>
+        <div id="confirmDiv">
+            <button>Add</button>
+        </div>
+    </div>
     <div id="list">
     </div>
 </template>
@@ -47,12 +71,13 @@
             });
             const instance = planet_permissions_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
+            this.addBtn = this.shadowRoot.querySelector('#confirmDiv > button');
             this.permBlockList = this.shadowRoot.getElementById("list");
             this.permList = {};
         }
 
         connectedCallback(){
-            
+            this.addBtn.addEventListener('click', this.addNewPermission.bind(this));
         }
 
         static get observedAttributes(){
@@ -79,6 +104,35 @@
             }
         }
 
+        addNewPermission(){
+            let permission = this.getPermission();
+            this.postal.publish({
+                channel:'permissions',
+                topic:'addNewPerm',
+                data:{permissions:permission, uri:this.uri}
+            })
+        }
+
+        getPermission(){
+            let ret = {};
+            let permDiv = this.shadowRoot.getElementById("newPermForm");
+            let webidInput = permDiv.querySelector('input[name=webid]');
+            let modesInput = permDiv.querySelectorAll('input[type=checkbox]:checked');
+
+            if (webidInput.value && modesInput && modesInput.length != 0){
+                let permArr = [];
+                for(let i = 0; i < modesInput.length; i++){
+                    let name = modesInput[i].getAttribute('name');
+                    if (name == "Read" || name == "Write" || name == "Control"){
+                        permArr.push(name);
+                    }
+                }
+                ret.webid = webidInput.value;
+                ret.modes = permArr;
+            }
+            return ret;
+        }
+
         setPostal(postal){
             if (postal){
                 this.postal = postal;
@@ -103,7 +157,6 @@
                     for(let j = 0; j < element['permissions'].length; j++){
                         perm.push(this.permissionFromUri(element['permissions'][j]));
                     }
-                    
                     this.permList[element['webid']] = perm;
                     this.newLine(element['webid'], perm);
                 }
@@ -205,23 +258,28 @@
 
         deletePerm(ev){
             let webid = ev.target.parentNode.parentNode.children[1].innerText;
+            console.log('this.uri :', this.uri);
 
             this.postal.publish({
                 channel:'permissions',
                 topic:'deletePerm',
-                data:{webid:webid, acl:this.acl, uri:this.uri}
+                data:{webid:webid, uri:this.uri}
             })
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
-            if (newValue != null && name == 'data-acl'){
-
+            if (newValue != null && name == 'data-uri'){
+                if (this.style.display == "none"){
+                    this.style.display = "inline";
+                }
                 this.permBlockList.innerHTML = "";
                 this.postal.publish({
                     channel:'permissions',
                     topic:'urichange',
-                    data: {acl:this.acl, uri:this.uri}
+                    data: newValue
                 })
+            } else if (newValue == null && name == 'data-uri'){
+                this.style.display = "none";
             }
         }
     }

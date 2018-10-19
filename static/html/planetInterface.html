@@ -13,6 +13,7 @@
 
     <planet-list></planet-list>
     <planet-form class="hidden"></planet-form>
+    <planet-permissions></planet-permissions>
 </template>
 <script>
     const planetInterfaceTmpl = document.currentScript.ownerDocument.querySelector("#tmpl-planetInterface");
@@ -26,6 +27,7 @@
             this.shadowRoot.appendChild(instance);
             this.planetForm = this.shadowRoot.querySelector("planet-form");
             this.planetList = this.shadowRoot.querySelector("planet-list");
+            this.permissions = this.shadowRoot.querySelector('planet-permissions');
         }
 
         connectedCallback(){
@@ -36,11 +38,13 @@
             this.postal = postal;
             this.planetForm.setPostal(postal);
             this.planetList.setPostal(postal);
+            this.permissions.setPostal(postal);
             this.setPostalChannels();
         }
 
         generateList(list){
             this.planetList.generateList(list);
+            this.permissions.setAttribute('data-uri', list.listUri);
         }
 
         setPostalChannels(){
@@ -53,8 +57,10 @@
                     if (data != null){
                         this.planetForm.setFormData(data);
                         this.planetForm.setAttribute('data-uri', data.uri);
+                        this.permissions.setAttribute('data-uri', data.uri);
                     } else {
                         this.planetForm.removeAttribute('data-uri');
+                        this.permissions.removeAttribute('data-uri');
                         this.planetForm.resetFormData();
                     }
                 }
