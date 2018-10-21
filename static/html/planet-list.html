@@ -36,7 +36,7 @@
         #add{
             cursor: pointer;
             width: 30%;
-            justify-content: center;
+            justify-content: space-between;
             text-align: center;
             border-radius: 25px;
             display: flex;
@@ -157,7 +157,7 @@
             this.table.innerHTML = "";
             for(const key in list){
                 if (list.hasOwnProperty(key)){
-                    this.createLine(list[key]);
+                    this.createLine(list[key].planet);
                 }
             }
         }
