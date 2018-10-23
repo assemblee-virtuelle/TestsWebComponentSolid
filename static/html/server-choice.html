@@ -1,0 +1,59 @@
+<template id="server-choice">
+    <style>
+    </style>
+    <div class="choose">
+        <label for="selectServer">Sélectionner un serveur Solid</label>
+        <select name="selectServer" id="selectServer">
+        </select>
+        <button id="submitBtn">Choisir</button>
+    </div>
+</template>
+<script>
+    let server_choice_template = document.currentScript.ownerDocument.getElementById('server-choice');
+    class ServerChoice extends HTMLElement {
+        constructor(){
+            super();
+            const shadowRoot = this.attachShadow({
+                mode: 'open'
+            });
+            const instance = server_choice_template.content.cloneNode(true);
+            this.shadowRoot.appendChild(instance);
+        }
+
+        initServerChoice(data){
+            if (data){
+                let selectList = this.shadowRoot.getElementById('selectServer');
+                let submitBtn = this.shadowRoot.getElementById('submitBtn');
+                for(let i = 0; i < data.length; i++){
+                    let option = document.createElement('option');
+                    option.setAttribute('value', data[i].server);
+                    option.innerText = 'Server '+ (i + 1);
+                    selectList.appendChild(option);
+                }
+                submitBtn.addEventListener('click', ev => {
+                    this.chooseServer(ev);
+                });
+            }
+        }
+
+        chooseServer(ev){
+            let selected = this.shadowRoot.querySelector('select');
+            if (selected.value){
+                let server = selected.value;
+                console.log('server :', server);
+                this.postal.publish({
+                    channel:'server',
+                    topic:'choice',
+                    data:server
+                });
+            }
+        }
+
+        setPostal(postal){
+            if(postal){
+                this.postal = postal;
+            }
+        }
+    }
+    window.customElements.define('server-choice', ServerChoice);
+</script>
