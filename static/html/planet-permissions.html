@@ -15,13 +15,14 @@
         }
 
         .webidDiv{
-            width:66%;
+            width:50%;
+            background-color: #68a6ca;
+            border-radius: 3px;
         }
         .permDiv{
-            border-left:2px solid black;
-            width:33%;
+            width:40%;
             display:flex;
-            justify-content:space-between;
+            justify-content:space-evenly;
         }
         .control{
             padding: 0px 5px 0px 5px;
@@ -31,6 +32,12 @@
             cursor: pointer;
         }
 
+        .actionDiv{
+            width:10%;
+            display:flex;
+            justify-content: space-around;
+            
+        }
         
     </style>
     <h2>Liste des Permissions</h2>
@@ -94,16 +101,6 @@
             }
         }
 
-        get acl(){
-            return this.getAttribute('data-acl');
-        }
-
-        set acl(_acl){
-            if (_acl){
-                this.setAttribute('data-acl', _acl);
-            }
-        }
-
         addNewPermission(){
             let permission = this.getPermission();
             this.postal.publish({
@@ -150,6 +147,7 @@
 
         populatePermList(data){
             this.permBlockList.innerHTML = "";
+            this.line = 0;
             for(const group in data){
                 if (data.hasOwnProperty(group)){
                     const element = data[group];
@@ -167,12 +165,18 @@
             let mainDiv = document.createElement('div');
             let webidDiv = document.createElement('div');
             let permDiv = document.createElement('div');
-            
+            let actionDiv = document.createElement('div');
+            let line = this.line;
+
+            mainDiv.id = "lineN" + this.line;
+            actionDiv.className = "actionDiv";
+
             let readDiv = document.createElement('div');
             readDiv.className = "perm read";
             let checkBoxRead = document.createElement('input');
             checkBoxRead.setAttribute('type', 'checkbox');
             checkBoxRead.setAttribute('disabled', true);
+            checkBoxRead.setAttribute('name', 'Read');
             let permTextRead = document.createElement('span');
             readDiv.appendChild(checkBoxRead);
             readDiv.appendChild(permTextRead);
@@ -182,6 +186,7 @@
             let checkBoxWrite = document.createElement('input');
             checkBoxWrite.setAttribute('type', 'checkbox');
             checkBoxWrite.setAttribute('disabled', true);
+            checkBoxWrite.setAttribute('name', 'Write');
             let permTextWrite = document.createElement('span');
             writeDiv.appendChild(checkBoxWrite);
             writeDiv.appendChild(permTextWrite);
@@ -191,6 +196,7 @@
             let checkBoxControl = document.createElement('input');
             checkBoxControl.setAttribute('type', 'checkbox');
             checkBoxControl.setAttribute('disabled', true);
+            checkBoxControl.setAttribute('name', 'Control');
             let permTextControl = document.createElement('span');
             controlDiv.appendChild(checkBoxControl);
             controlDiv.appendChild(permTextControl);
@@ -198,13 +204,44 @@
             let deleteDiv = document.createElement('div');
             deleteDiv.className = "delete";
             let deleteImg = document.createElement('img');
-            deleteImg.setAttribute('src', '/images/cancel.png');
+            deleteImg.setAttribute('src', '/images/delete.png');
             deleteImg.style.width = '20px';
             deleteDiv.appendChild(deleteImg);
-
             deleteDiv.addEventListener('click', ev => {
-                this.deletePerm(ev);
+                this.deletePerm(line);
             });
+
+            let editDiv = document.createElement('div');
+            editDiv.className = "edit";
+            let editImg = document.createElement('img');
+            editImg.setAttribute('src', '/images/Edit.png');
+            editImg.style.width = '20px';
+            editDiv.appendChild(editImg);
+            editImg.addEventListener('click', ev => {
+                this.changeEditStatus(line, true);
+            })
+
+            let confirmDiv = document.createElement('div');
+            confirmDiv.className = 'confirm';
+            confirmDiv.style.display = 'none';
+            let confirmImg = document.createElement('img');
+            confirmImg.setAttribute('src', '/images/confirm.png');
+            confirmImg.style.width = '20px';
+            confirmDiv.appendChild(confirmImg);
+            confirmImg.addEventListener('click', ev => {
+                this.editPerm(line);
+            })
+
+            let cancelDiv = document.createElement('div');
+            cancelDiv.className = 'cancel';
+            cancelDiv.style.display = 'none';
+            let cancelImg = document.createElement('img');
+            cancelImg.setAttribute('src', '/images/cancel.png');
+            cancelImg.style.width = '20px';
+            cancelDiv.appendChild(cancelImg);
+            cancelImg.addEventListener('click', ev => {
+                this.changeEditStatus(line, false);
+            })
 
             mainDiv.className = 'mainDiv';
             webidDiv.className = 'webidDiv';
@@ -236,11 +273,85 @@
                 }
             }
 
-            mainDiv.appendChild(deleteDiv);
+            actionDiv.appendChild(editDiv);
+            actionDiv.appendChild(deleteDiv);
+            actionDiv.appendChild(confirmDiv);
+            actionDiv.appendChild(cancelDiv);
+
             mainDiv.appendChild(webidDiv);
             mainDiv.appendChild(permDiv);
+            mainDiv.appendChild(actionDiv);
 
+            this.line++;
             this.permBlockList.appendChild(mainDiv);
+        }
+
+        changeEditStatus(line, status){
+            let mainDiv = this.shadowRoot.getElementById("lineN" + line);
+            let permDiv = mainDiv.querySelector('.permDiv');
+            let actionDiv = mainDiv.querySelector('.actionDiv');
+            let checkboxArr = permDiv.querySelectorAll('input[type=checkbox]');
+
+            if (status == true){
+                actionDiv.querySelector('.edit').style.display = 'none';
+                actionDiv.querySelector('.delete').style.display = 'none';
+                actionDiv.querySelector('.confirm').style.display = 'block';
+                actionDiv.querySelector('.cancel').style.display = 'block';
+                checkboxArr.forEach(el => {
+                    el.removeAttribute('disabled');
+                })
+            } else {
+                actionDiv.querySelector('.edit').style.display = 'block';
+                actionDiv.querySelector('.delete').style.display = 'block';
+                actionDiv.querySelector('.confirm').style.display = 'none';
+                actionDiv.querySelector('.cancel').style.display = 'none';
+                checkboxArr.forEach(el => {
+                    el.setAttribute('disabled', true);
+                })
+            }
+        }
+
+        editPerm(line){
+            let mainDiv = this.shadowRoot.getElementById("lineN" + line);
+            let webidDiv = mainDiv.querySelector(".webidDiv");
+            let permDiv = mainDiv.querySelector('.permDiv');
+            let actionDiv = mainDiv.querySelector('.actionDiv');
+            let checkboxArr = permDiv.querySelectorAll('input[type=checkbox]:checked');
+            let permArr = [];
+            let ret = {};
+
+            let webid = webidDiv.innerText;
+
+            checkboxArr.forEach(elem => {
+                let name = elem.getAttribute('name');
+                if (name === 'Read' || name === 'Write' || name === 'Control'){
+                    permArr.push(name)
+                }
+            })
+
+            ret.modes = permArr;
+            ret.webid = webid;
+
+            if (webid != null){
+                this.postal.publish({
+                    channel:'permissions',
+                    topic:'editPerm',
+                    data:{permissions:ret, uri:this.uri}
+                }) 
+            }
+        }
+
+        deletePerm(line){
+            let mainDiv = this.shadowRoot.getElementById("lineN" + line);
+            let webidDiv = mainDiv.querySelector(".webidDiv");
+            let webid = webidDiv.innerText;
+            if (webid != null){
+                this.postal.publish({
+                    channel:'permissions',
+                    topic:'deletePerm',
+                    data:{webid:webid, uri:this.uri}
+                }) 
+            }
         }
 
         permissionFromUri(perm){
@@ -254,17 +365,6 @@
                 default:
                     return null;
             }
-        }
-
-        deletePerm(ev){
-            let webid = ev.target.parentNode.parentNode.children[1].innerText;
-            console.log('this.uri :', this.uri);
-
-            this.postal.publish({
-                channel:'permissions',
-                topic:'deletePerm',
-                data:{webid:webid, uri:this.uri}
-            })
         }
 
         attributeChangedCallback(name, oldValue, newValue) {

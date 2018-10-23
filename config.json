@@ -1,0 +1,26 @@
+[
+    {
+        "server":"https://localhost:8443",
+        "planetList":[
+            "https://savincen.localhost:8443/PlanetList",
+            "https://simon.localhost:8443/listes/PlanetList",
+            "https://guillaume.localhost:8444/PlanetList"
+        ]
+    },
+    {
+        "server":"https://localhost:8444",
+        "planetList":[
+            "https://savincen.localhost:8443/PlanetList",
+            "https://guillaume.localhost:8444/PlanetList",
+            "https://toto.localhost:8444/PlanetList"
+        ]
+    },
+    {
+        "server":"https://localhost:8445",
+        "planetList":[
+            "https://savincen.localhost:8443/PlanetList",
+            "https://simon.localhost:8443/listes/PlanetList",
+            "https://guillaume.localhost:8444/PlanetList"
+        ]
+    }
+]
