@@ -73,8 +73,8 @@
 
     <div id="list-block">
         <h1 class="title">Liste des planètes</h1>
-        <label for="listName">Charger la liste d'un autre serveur :</label>
-        <input type="text" id="listName">
+        <label for="listOfList">Charger la liste d'un autre serveur :</label>
+        <select name="listOfList" id="listOfList"></select>
         <button id="submitName">Submit</button>
         <table>
             <thead>
@@ -113,7 +113,7 @@
             const instance = planet_list_template.content.cloneNode(true);
             this.shadowRoot.appendChild(instance);
             this.table = this.shadowRoot.getElementById("tab");
-            this.listName = this.shadowRoot.getElementById("listName");
+            this.listOfList = this.shadowRoot.getElementById("listOfList");
             this.addPerms = this.shadowRoot.querySelector('add-perms');
             this.addPermsBtn = this.shadowRoot.getElementById("addPermsButton");
         }
@@ -126,7 +126,7 @@
         }
 
         submitName(ev){
-            let list = this.listName.value;
+            let list = this.listOfList.value;
             if (this.defaultName != list){
                 this.postal.publish({
                     channel:'interface',
@@ -147,13 +147,26 @@
 
         setPostal(){
             this.postal = postal;
+            this.postal.subscribe({
+                channel:'interface',
+                topic:'sendListofList',
+                callback:data => {
+                    for(let i = 0; i < data.list.length; i++){
+                        let option = document.createElement('option');
+                        option.setAttribute('name', data.list[i]);
+                        if (data.list[i] == data.default){
+                            option.setAttribute('selected', true);
+                        }
+                        option.innerText = data.list[i];
+                        this.listOfList.appendChild(option);
+                    }
+                }
+            })
         }
 
         generateList(data){
             let list = data.list;
             console.log('data :', data);
-            this.listName.setAttribute('value', data.uri);
-            this.defaultName = this.listName.value;
             this.table.innerHTML = "";
             for(const key in list){
                 if (list.hasOwnProperty(key)){

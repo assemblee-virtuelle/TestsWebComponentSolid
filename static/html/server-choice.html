@@ -24,10 +24,11 @@
             if (data){
                 let selectList = this.shadowRoot.getElementById('selectServer');
                 let submitBtn = this.shadowRoot.getElementById('submitBtn');
+
                 for(let i = 0; i < data.length; i++){
                     let option = document.createElement('option');
-                    option.setAttribute('value', data[i].server);
-                    option.innerText = 'Server '+ (i + 1);
+                    option.setAttribute('value', data[i].uri);
+                    option.innerText = data[i].label
                     selectList.appendChild(option);
                 }
                 submitBtn.addEventListener('click', ev => {
