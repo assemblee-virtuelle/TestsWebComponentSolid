@@ -1,7 +1,19 @@
 <template id="server-choice">
     <style>
+        .centered {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            /* bring your own prefixes */
+            transform: translate(-50%, -50%);
+        }
+
+        .choose {
+            border:2px dashed black;
+            padding:30px;
+        }
     </style>
-    <div class="choose">
+    <div class="choose centered">
         <label for="selectServer">Sélectionner un serveur Solid</label>
         <select name="selectServer" id="selectServer">
         </select>
