@@ -151,26 +151,32 @@
                 channel:'interface',
                 topic:'sendListofList',
                 callback:data => {
+                    let optionDefault = document.createElement('option');
+                    optionDefault.setAttribute('name', data.default);
+                    optionDefault.innerText = data.default;
+                    this.listOfList.appendChild(optionDefault);
                     for(let i = 0; i < data.list.length; i++){
                         let option = document.createElement('option');
                         option.setAttribute('name', data.list[i]);
-                        if (data.list[i] == data.default){
-                            option.setAttribute('selected', true);
-                        }
                         option.innerText = data.list[i];
-                        this.listOfList.appendChild(option);
+                        if (data.list[i] == data.default){
+                            optionDefault.setAttribute('selected', true);
+                        } else {
+                            this.listOfList.appendChild(option);
+                        }
                     }
                 }
             })
         }
 
         generateList(data){
-            let list = data.list;
-            console.log('data :', data);
             this.table.innerHTML = "";
-            for(const key in list){
-                if (list.hasOwnProperty(key)){
-                    this.createLine(list[key].planet);
+            if(data){
+                let list = data.list;
+                for(const key in list){
+                    if (list.hasOwnProperty(key)){
+                        this.createLine(list[key].planet);
+                    }
                 }
             }
         }
