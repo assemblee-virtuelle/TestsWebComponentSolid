@@ -11,3 +11,5 @@ To use directly the `webpack` command you must have installed it beforehand with
 * Then launch the second server with the command `npm start` 
 
 Better use it on chrome, it doesn't work properly on firefox
+
+Your server will be launched on `https://localhost:8000`
